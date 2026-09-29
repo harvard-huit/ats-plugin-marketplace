@@ -10,21 +10,44 @@
       "source": "./plugins/huit-github",
       "description": "GitHub integration for AAIS / HUIT without a Personal Access Token (github.com via remote MCP + OAuth, github.huit.harvard.edu via local MCP + gh login).",
       "category": "productivity",
-      "tags": ["github", "mcp", "huit"]
+      "tags": [
+        "github",
+        "mcp",
+        "huit"
+      ]
     },
     {
       "name": "huit-aws",
       "source": "./plugins/huit-aws",
       "description": "Log into HUIT AWS accounts from Claude Code: HarvardKey/Okta SAML via the HUIT aws-login CLI, or a refreshing aws login console-session attach. Skill /huit-aws:aws-login.",
       "category": "productivity",
-      "tags": ["aws", "saml", "huit"]
+      "tags": [
+        "aws",
+        "saml",
+        "huit"
+      ]
     },
     {
       "name": "quiz",
       "source": "./plugins/quiz",
       "description": "Short multiple-choice comprehension checks. /quiz:session asks about what happened in the current session (security-relevant changes, decisions made on your behalf, loose ends); /quiz:project asks about the gotchas of the repo you are in.",
       "category": "productivity",
-      "tags": ["quiz", "comprehension", "onboarding"]
+      "tags": [
+        "quiz",
+        "comprehension",
+        "onboarding"
+      ]
+    },
+    {
+      "name": "huit-apigee",
+      "source": "./plugins/huit-apigee",
+      "description": "Apigee X proxy bundles on the HUIT ADEX gateway: /huit-apigee:pull (fetch a revision without clobbering local edits), /huit-apigee:push (drift check, lint, validate, diff, deploy, smoke, rollback offer), /huit-apigee:status (deployed revision per env across orgs). Ships the shared Apigee gotchas reference.",
+      "category": "productivity",
+      "tags": [
+        "apigee",
+        "gcloud",
+        "huit"
+      ]
     }
   ]
 }
