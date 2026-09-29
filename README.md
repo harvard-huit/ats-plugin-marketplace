@@ -8,6 +8,7 @@ both the marketplace and the plugins.
 | `huit-github` | GitHub access for both of our GitHubs **without a Personal Access Token** | `/huit-github:github-setup` |
 | `huit-aws` | Log into HUIT AWS accounts with HarvardKey, from inside Claude Code | `/huit-aws:aws-login [account]` |
 | `quiz` | Multiple-choice comprehension checks on the current session or on the repo's gotchas | `/quiz:session`, `/quiz:project` |
+| `huit-apigee` | Pull, push, and inspect Apigee X proxy bundles on the HUIT gateway without clobbering edits or the wrong org | `/huit-apigee:pull`, `/huit-apigee:push`, `/huit-apigee:status` |
 
 ## Install
 
@@ -20,6 +21,7 @@ Then, inside Claude Code:
 /plugin install huit-github@huit-agent-plugins
 /plugin install huit-aws@huit-agent-plugins
 /plugin install quiz@huit-agent-plugins
+/plugin install huit-apigee@huit-agent-plugins
 ```
 
 Install whichever you need. You approve every command a skill proposes.
@@ -37,6 +39,7 @@ auto-update on. To update by hand:
 /plugin update huit-github@huit-agent-plugins
 /plugin update huit-aws@huit-agent-plugins
 /plugin update quiz@huit-agent-plugins
+/plugin update huit-apigee@huit-agent-plugins
 /reload-plugins
 ```
 
@@ -171,10 +174,48 @@ after a significant change lands. An argument narrows either quiz, e.g.
 Neither skill changes anything. The project quiz reads files and git history;
 in a large repo it uses a read-only subagent for the scan.
 
+## huit-apigee
+
+Replaces the `apigee-pull` / `apigee-push` command files that several proxy
+repos carried in drifting copies. Three skills, all driven by small shell
+scripts you approve one at a time; the Apigee Management API is called with
+`gcloud auth print-access-token`, so the only requirement is a `gcloud` login.
+
+| Skill | Does | Say |
+|---|---|---|
+| `/huit-apigee:pull [proxy] [rev]` | downloads a revision into `<dir>/apiproxy/`, saves the API product next to it, normalizes line endings, records the revision, lists KVMs / shared flows / target servers the proxy depends on | "pull the bundle", "get the latest revision" |
+| `/huit-apigee:push [proxy] [env]` | drift check, pre-push hook, lint, server-side validate, diff against the deployed revision, confirm for stage/prod, import, deploy, wait for READY, smoke test through the gateway, rollback offer | "deploy to dev", "push to apigee", "ship it" |
+| `/huit-apigee:status [proxy]` | deployed revision per environment across the nonprod, preprod, and prod orgs; gateway hostnames per environment | "what revision is live", "which org is stage in" |
+
+What it refuses to do: overwrite a bundle directory with uncommitted or
+untracked changes (commit, stash, or an explicit `--force`), take the org
+from gcloud's active project silently (the environment picks the org:
+nonprod for dev/test/sand, preprod for stage, prod for prod), zip anything but
+`apiproxy/`, or deploy to stage or prod without showing the diff and asking.
+
+Optional `.apigee.json` at the repo root pins the proxy name and bundle
+directory (needed when a repo has more than one `apiproxy/`), overrides orgs
+and hosts, adds a pre-push command (spec regeneration), smoke routes with
+expected status codes, and a post-deploy command. Header values in smoke
+routes are `$VAR` references, read from your shell and never printed. Schema:
+`plugins/huit-apigee/references/config.md`. The pull skill writes a gitignored
+`.apigee-state.json` that the push skill uses to warn when someone else
+imported since your last pull.
+
+The plugin also ships `references/apigee-gotchas.md`: the condition-parser
+quirks, path-rewrite rules, TargetEndpoint boundary, BasicAuthentication
+`AssignTo` trap, and the one import endpoint that works, collected from five
+HUIT proxy repos. The push skill reads it whenever an import or deploy fails.
+Debug sessions (`trace`) and KVM editing (`kvm`) are planned, not shipped.
+
+Requirements: `gcloud` (logged in; `gcloud auth login --no-launch-browser` on
+Cloud9), `curl`, `python3`, `zip`/`unzip`. No apigeecli needed; it remains a
+fine alternative for CI (`apigeecli apis create bundle --ovr --wait`).
+
 ## Layout
 
 ```
-.claude-plugin/marketplace.json          the marketplace (three plugins)
+.claude-plugin/marketplace.json          the marketplace (four plugins)
 plugins/huit-github/
   .claude-plugin/plugin.json             manifest
   .mcp.json                              github (hosted, headersHelper) + github-huit (wrapper)
@@ -191,6 +232,18 @@ plugins/quiz/
   references/quiz-format.md              question style, asking, grading (shared by both skills)
   skills/session/SKILL.md                what happened in this session
   skills/project/SKILL.md                gotchas of the repo you are in
+plugins/huit-apigee/
+  .claude-plugin/plugin.json             manifest
+  scripts/lib.sh                         token file, .apigee.json reader, proxy/org/bundle resolution
+  scripts/fetch.sh                       download a revision; refuses to clobber uncommitted edits
+  scripts/import.sh                      zip apiproxy/ only, import or --validate
+  scripts/deploy.sh                      record previous revision, deploy, poll to READY
+  scripts/smoke.sh                       routes from .apigee.json through the gateway host
+  scripts/status.sh, hosts.sh            read-only: deployments per org, env-group hostnames
+  scripts/lint-bundle.sh                 manifest vs disk, unstepped policies, known-gotcha patterns
+  references/config.md                   .apigee.json / .apigee-state.json schema and HUIT defaults
+  references/apigee-gotchas.md           the consolidated Apigee knowledge
+  skills/pull, push, status/SKILL.md
 ```
 
 Validate before committing:
@@ -203,6 +256,8 @@ claude plugin validate plugins/huit-aws
 claude plugin validate plugins/huit-aws/skills
 claude plugin validate plugins/quiz
 claude plugin validate plugins/quiz/skills
+claude plugin validate plugins/huit-apigee
+claude plugin validate plugins/huit-apigee/skills
 ```
 
 Bump the plugin's `version` on every change you publish; that field is what

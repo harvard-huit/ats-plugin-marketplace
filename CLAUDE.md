@@ -3,12 +3,14 @@
 A self-hosting Claude Code plugin marketplace for the AAIS group / HUIT org.
 Repo: `harvard-huit/huit-agent-plugins` (github.com, **public** by decision
 on 2026-09-25, see the visibility item under open questions). Marketplace
-name: `huit-agent-plugins`. It holds three plugins: `huit-github`, which gives
+name: `huit-agent-plugins`. It holds four plugins: `huit-github`, which gives
 people a working GitHub integration **without creating or storing a Personal
 Access Token**, `huit-aws`, which logs people into HUIT AWS accounts via
-HarvardKey (see "huit-aws plugin" below), and `quiz`, multiple-choice
+HarvardKey (see "huit-aws plugin" below), `quiz`, multiple-choice
 comprehension checks on the current session or a repo's gotchas (see "quiz
-plugin" below). Onboarding is two slash commands per plugin.
+plugin" below), and `huit-apigee`, pull/push/status for Apigee X proxy
+bundles (see "huit-apigee plugin" below). Onboarding is two slash commands
+per plugin.
 
 Status (2026-09-19): restructured to `plugins/<name>/`, both plugins validate
 and install locally. The GHES path is verified end to end. Nothing is committed
@@ -31,7 +33,16 @@ carry the same version; if they ever diverge, the cache copy is the one
 Status (2026-09-26): `huit-aws` 0.2.0. The `aws-login` skill now defaults to
 `aws login` into the `default` profile (person picks any role in the console)
 and refreshes saved profiles that share the session; `login_all` is the
-"all" path only. Uncommitted.
+"all" path only. Committed as 0952f0b.
+Status (2026-09-28): a `huit-slack` plugin was designed and its Slack app
+**rejected** by the Harvard Slack Grid admins. Not built. See "huit-slack
+(rejected)" below and issue #2.
+Status (2026-09-29): added the `huit-apigee` plugin (0.1.0) from issue #5
+with `pull`, `push`, `status` skills, eight scripts, and two references.
+`trace` and `kvm` deferred. Scripts tested live read-only against
+`ats-snow-proxy` (fetch, dirty-tree refusal, validate-only import, status,
+hosts, smoke); no revision was created and nothing was deployed. Uncommitted;
+the five proxy repos are not migrated yet.
 
 @.claude/memory/INDEX.md
 
@@ -144,11 +155,17 @@ huit-agent-plugins/
 │   ├── huit-aws/
 │   │   ├── .claude-plugin/plugin.json
 │   │   └── skills/aws-login/SKILL.md    # aws-login login_all or aws login attach; see design below
-│   └── quiz/
+│   ├── quiz/
+│   │   ├── .claude-plugin/plugin.json
+│   │   ├── references/quiz-format.md    # shared: writing questions, asking, grading
+│   │   ├── skills/session/SKILL.md      # /quiz:session, the default "quiz me"
+│   │   └── skills/project/SKILL.md      # /quiz:project, gotchas of the repo
+│   └── huit-apigee/
 │       ├── .claude-plugin/plugin.json
-│       ├── references/quiz-format.md    # shared: writing questions, asking, grading
-│       ├── skills/session/SKILL.md      # /quiz:session, the default "quiz me"
-│       └── skills/project/SKILL.md      # /quiz:project, gotchas of the repo
+│       ├── scripts/                     # lib, fetch, import, deploy, smoke, status, hosts, lint-bundle
+│       ├── references/config.md         # .apigee.json / .apigee-state.json, verified HUIT org+host table
+│       ├── references/apigee-gotchas.md # consolidated Apigee knowledge from five proxy repos
+│       └── skills/{pull,push,status}/SKILL.md
 ├── README.md                 # user-facing: install, updates, one section per plugin
 ├── CLAUDE.md                 # this file
 └── .claude/memory/INDEX.md   # committed project memory (portable across machines)
@@ -411,13 +428,125 @@ name `quiz` was chosen for the invocation (`/quiz:session`, `/quiz:project`);
   its own for claude.ai upload loses its format; upload the plugin, not a
   skill.
 
+## huit-slack (rejected, not built)
+
+Full design record is issue #2 on this repo; do not re-derive it. The short
+version, so nobody retries the same route:
+
+- Slack's hosted MCP server (`https://mcp.slack.com/mcp`) is "bring your own
+  app": any Marketplace or internal Slack app with the Model Context Protocol
+  toggle on and PKCE enabled works as the OAuth client, no server code and no
+  client secret. Claude Code config is `{"type":"http","url":...,"oauth":
+  {"clientId":..., "callbackPort":...}}`. A `huit-slack` plugin would be that
+  one file.
+- An internal app with the read-and-post user scopes was submitted and
+  **rejected 2026-09-28** on two independent Harvard Slack Grid rules: AI
+  assistants, connectors, and bots (Claude, ChatGPT) are not approved at all,
+  and the history scopes (`channels:history`, `groups:history`,
+  `mpim:history`, `im:history`) are not approved for any app. Dropping DM
+  scopes would not have helped. The internal-app route got the same reviewers
+  and the same blanket policy as the Marketplace connector.
+- The policy is under review with ISDP holding the green light, aimed at the
+  *official* ChatGPT and Claude connectors. If that lands, the answer is
+  Anthropic's official `slack` plugin, not a custom app; add a README pointer
+  and close #2. Revive the custom design only if AI connectors are approved
+  but the official one is still refused.
+- Never name the Slack admin in this repo or its issues; the repo is public.
+
+## huit-apigee plugin
+
+Designed in issue #5 (github.com `harvard-huit/huit-agent-plugins`), which
+lists what the old `~/.claude/commands/apigee-{pull,push}.md` and the
+`aais-maestro-api/.claude/commands/` copies got wrong. First draft built
+2026-09-29: `pull`, `push`, `status` skills over REST scripts (curl plus
+`gcloud auth print-access-token`); apigeecli is not required. `trace` and
+`kvm` are designed in the issue but not built. Consumers to migrate after it
+ships: `ats-snow-proxy`, `aais-splunk-api`, `aais-idphoto-api`,
+`aais-maestro-api`, `person-api-proxy` (add `.apigee.json`, delete the
+command copies, move the Apigee gotcha sections out of their CLAUDE.md files
+and point at `references/apigee-gotchas.md`).
+
+### Facts established 2026-09-29 (verified live, do not re-derive)
+
+- **Org per env, from the env groups API:** `apigee-x-nonprod-406719` hosts
+  dev, test, sand, train, archive; `apigee-x-preprod` hosts stage;
+  `apigee-x-prod-406719` hosts prod. `ats-snow-proxy/CLAUDE.md` saying
+  nonprod hosts stage is wrong.
+- **Hosts:** `go.<env>.apis.huit.harvard.edu` for dev, test, sand, stage.
+  Prod has both `go.apis.huit.harvard.edu` and `go.prod.apis.huit.harvard.edu`
+  attached, so both documented forms work. `test` has its own host (the old
+  command mapped it to stage's). `train` and `archive` share dev's group.
+  Every group also has bare `<env>.apis...` and `apigee-x.<env>.apis...`
+  names; the scripts prefer `go.*`. Table lives in `references/config.md`.
+- `action=validate` on `POST /apis?action=validate&name=X` with the multipart
+  zip works on nonprod and creates no revision (response has no `revision`).
+- Lint findings on the real bundles: `validate-spec` and `Quota-1` are
+  declared but never stepped in snow, splunk, maestro; snow's default flow
+  uses `MatchesPath "/"`; maestro's `am-set-path-api` and person-api's
+  `am-post` use `<Set><Path>`. Parenthesized `!=` conditions deploy fine in
+  splunk and person-api, so the "`!=` fails deploy" gotcha from maestro
+  applies to unparenthesized `!=` combined with and/or, and to `NotLike`; the
+  lint warns only on those.
+- macOS `/usr/bin/env bash` is 3.2: the scripts avoid associative arrays and
+  `mapfile`, and guard empty-array expansions with `${arr[@]+"${arr[@]}"}`.
+- The token never touches stdout or `ps`: `lib.sh` writes it to a mode-600
+  temp file that curl reads with `-H @file`, removed on exit.
+- `unzip -l` prints the archive path in its header, so content checks must
+  use `unzip -Z1` (a `grep '\.zip$'` on `-l` output matched the archive
+  itself).
+- `gcloud auth print-access-token` failed once at the start of the session
+  and worked minutes later without a re-login; treat a single failure as
+  transient before telling the person to log in again.
+
+### Design
+
+- **Config:** `.apigee.json` at the consumer repo root (`proxy`, `bundleDir`,
+  `envs.<env>.{org,host,confirm,note}`, `prePush`, `smoke[]`, `postDeploy`);
+  `.apigee-state.json` written by pull, gitignored, read by push's drift
+  check. Resolution: flag > config > HUIT default table > gcloud project
+  (with a warning). Schema in `references/config.md`.
+- **Scripts** (`scripts/`, bash 3.2 compatible, `set -euo pipefail`,
+  human summary on stderr, JSON on stdout, `--help` everywhere): `lib.sh`,
+  `fetch.sh` (refuses on a dirty or non-git bundle dir; `--force` to
+  override; `--product` writes the product JSON *outside* the bundle;
+  `--lf`), `import.sh` (zips only `apiproxy/`, excludes `.DS_Store`, dies if
+  a product JSON or zip is inside; `--validate`), `deploy.sh` (prints
+  `previousRevision` and the rollback command before deploying; exit 6 on
+  ERROR, 7 on timeout), `smoke.sh` (routes from config, `$VAR` headers
+  expanded and never printed, host from `hosts.sh`), `status.sh`, `hosts.sh`,
+  `lint-bundle.sh` (errors for what fails import; warnings for drift and the
+  gotcha patterns).
+- **Skills** call one script per step so each network action is one approval.
+  `push` order: resolve, drift check, prePush, lint, validate, diff against
+  the deployed revision, confirm (stage/prod or org mismatch), import,
+  deploy, smoke, postDeploy, report. No archive-zip step.
+- Proxy name comes from the `<APIProxy name>` manifest, never the directory.
+  More than one `apiproxy/` (idphoto) is refused until `bundleDir` pins it.
+
+### To do
+
+- [ ] Commit and push, then install from the marketplace and run
+      `/huit-apigee:status` and `/huit-apigee:pull` from an installed copy.
+- [ ] First real `push` to dev (ats-snow-proxy is the candidate once its
+      spec rewrite is committed): exercise import, deploy, `previousRevision`,
+      smoke, and the rollback offer. Not done in this pass by decision.
+- [ ] Migrate the five repos; delete `~/.claude/commands/apigee-*.md` and
+      `aais-maestro-api/.claude/commands/apigee-*.md`.
+- [ ] `trace` skill (debug sessions: `?timeout=180`, no `count`) and `kvm`
+      skill (names only, values never echoed); then fix snow's misnamed
+      `apikey` KVM entry.
+- [ ] Decide whether `push` should offer a read-only `settings.json`
+      allowlist (`status.sh`, `hosts.sh`, `lint-bundle.sh`); never
+      `gcloud auth print-access-token`.
+
 ## Conventions
 
 - Validate before every commit. Each `claude plugin validate <dir>` call checks
   one thing: the marketplace manifest for `.`, a plugin manifest for a plugin
-  dir, and skill frontmatter for a `skills` dir. So run all seven:
+  dir, and skill frontmatter for a `skills` dir. So run all nine:
   `claude plugin validate .`, then `... plugins/<name>` and
-  `... plugins/<name>/skills` for each of `huit-github`, `huit-aws`, `quiz`.
+  `... plugins/<name>/skills` for each of `huit-github`, `huit-aws`, `quiz`,
+  `huit-apigee`.
 - Test locally with `/plugin marketplace add ~/workshop/huit-agent-plugins` then
   `/plugin install <name>@huit-agent-plugins` (or the same via `claude plugin ...`
   on the CLI). Installs copy to `~/.claude/plugins/cache/huit-agent-plugins/<name>/<version>/`;
