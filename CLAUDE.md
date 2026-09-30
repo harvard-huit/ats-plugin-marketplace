@@ -53,6 +53,10 @@ Status (2026-09-30): renamed from `huit-agent-plugins` to
 memory dir) to align with the org-level `huit-plugin-marketplace` and scope
 this one to ATS. Plugin versions bumped (0.3.2 / 0.2.1 / 0.1.1 / 0.1.1) for
 the new `repository` URL. Still not announced to the org.
+Status (2026-09-30, later): claude.ai marketplace sync **skipped**
+`huit-github` because it shipped a top-level `bin/` directory (see the
+convention below). Both wrapper scripts moved to `scripts/`; `huit-github`
+bumped to 0.3.3.
 
 @.claude/memory/INDEX.md
 
@@ -135,7 +139,7 @@ references do not auto-link.
 2. **github.com path is GitHub's hosted MCP server over HTTP, authenticated
    with `gh`'s token through a `headersHelper`.** Declared in plugin-root
    `.mcp.json` as `{"type": "http", "url": "https://api.githubcopilot.com/mcp/",
-   "headersHelper": "${CLAUDE_PLUGIN_ROOT}/bin/github-mcp-headers.sh"}`. The
+   "headersHelper": "${CLAUDE_PLUGIN_ROOT}/scripts/github-mcp-headers.sh"}`. The
    helper prints `{"Authorization":"Bearer <gh auth token>"}`; Claude Code runs
    it on every connection and again after a 401/403. `${CLAUDE_PLUGIN_ROOT}` is
    documented as expanded in `url`, `headers`, and `headersHelper`.
@@ -153,7 +157,7 @@ references do not auto-link.
    this path; SAML authorization of the `gh` token (`gh auth refresh`) is the
    only per-person step.
 3. **GHES path is the local `github-mcp-server` binary behind a wrapper script.**
-   `bin/github-mcp-ghes.sh` sets `GITHUB_HOST=https://github.huit.harvard.edu`,
+   `scripts/github-mcp-ghes.sh` sets `GITHUB_HOST=https://github.huit.harvard.edu`,
    pulls the token from `gh auth token --hostname github.huit.harvard.edu`, and
    execs `github-mcp-server stdio`. The binary is on Homebrew (`github-mcp-server`,
    1.12.x at time of writing) and Docker. No PAT: the token comes from `gh`'s
@@ -188,8 +192,8 @@ ats-plugin-marketplace/
 │   ├── huit-github/
 │   │   ├── .claude-plugin/plugin.json   # name, version, description, author, repository
 │   │   ├── .mcp.json                    # github (hosted http, headersHelper) + github-huit (wrapper script)
-│   │   ├── bin/github-mcp-headers.sh    # gh auth token -> {"Authorization":"Bearer ..."} for the hosted server
-│   │   ├── bin/github-mcp-ghes.sh       # GITHUB_HOST + gh auth token -> github-mcp-server stdio
+│   │   ├── scripts/github-mcp-headers.sh # gh auth token -> {"Authorization":"Bearer ..."} for the hosted server
+│   │   ├── scripts/github-mcp-ghes.sh    # GITHUB_HOST + gh auth token -> github-mcp-server stdio
 │   │   ├── hooks/hooks.json             # SessionStart -> scripts/check-gh-auth.sh
 │   │   ├── scripts/check-gh-auth.sh
 │   │   └── skills/github-setup/SKILL.md # install gh / MCP binary, device-flow login per host, /mcp, allowlist
@@ -213,7 +217,7 @@ ats-plugin-marketplace/
 ```
 
 Inside each plugin, only `plugin.json` lives in `.claude-plugin/`; everything
-else is at that plugin's root. Use `"${CLAUDE_PLUGIN_ROOT}"/bin/... ` (quoted)
+else is at that plugin's root. Use `"${CLAUDE_PLUGIN_ROOT}"/scripts/... ` (quoted)
 in hook commands and `.mcp.json` so paths resolve after install. Skill `name`
 in frontmatter is the invocation name (`/<plugin>:<skill>`); keep it stable.
 
@@ -608,6 +612,12 @@ and point at `references/apigee-gotchas.md`).
   update-check hook; the built-in mechanism covers it.
 - Scripts must be executable in git (`chmod +x`, and check `git ls-files -s`
   shows mode 100755); the installer preserves modes, it does not add them.
+- **No top-level `bin/` in any plugin.** claude.ai-hosted plugin sync
+  (checked 2026-09-30) skips a plugin that ships `bin/` because those files
+  are added to PATH on the CLI but not shown on the admin approval surface.
+  Put helper executables in `scripts/` and reference them from `.mcp.json`,
+  `hooks.json`, or skills via `${CLAUDE_PLUGIN_ROOT}/scripts/...`. The
+  skipped plugin stays at its last synced version until fixed.
 - Do not put a `.mcp.json` at the repo root. Claude Code reads a root
   `.mcp.json` as a *project* MCP config whenever this repo is the working
   directory, and `${CLAUDE_PLUGIN_ROOT}` is not expanded there, so a phantom
@@ -621,7 +631,7 @@ and point at `references/apigee-gotchas.md`).
 - Hook and wrapper scripts: `#!/usr/bin/env bash`, `set -euo pipefail`, no
   Mac-only paths (this will run on Linux too). Never print tokens.
 - **Testing token-emitting scripts from Claude's Bash tool.** Always redact:
-  pipe `bin/github-mcp-headers.sh` through
+  pipe `scripts/github-mcp-headers.sh` through
   `sed -E 's/Bearer [A-Za-z0-9_]+/Bearer <redacted>/'` and `gh auth token`
   through `cut -c1-4`. Pointing `gh` at an empty `GH_CONFIG_DIR` is **not** a
   no-login simulation: `gh` still finds the keyring entry and also honors

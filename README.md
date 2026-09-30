@@ -114,8 +114,8 @@ have.
 
 Troubleshooting: if a server shows failed in `/mcp`, run its script by hand to
 see why. Find the install path with `claude plugin list --json`
-(`installPath`), then `<installPath>/bin/github-mcp-ghes.sh </dev/null` for
-GHES, or `<installPath>/bin/github-mcp-headers.sh | sed -E 's/Bearer .*/Bearer <redacted>/'`
+(`installPath`), then `<installPath>/scripts/github-mcp-ghes.sh </dev/null` for
+GHES, or `<installPath>/scripts/github-mcp-headers.sh | sed -E 's/Bearer .*/Bearer <redacted>/'`
 for github.com (keep the `sed`; the raw output is your token). Usual causes:
 no `gh` login for that host, or the GHES binary not on PATH. A 403 mentioning
 SAML on github.com means `gh auth refresh --hostname github.com` and
@@ -225,8 +225,8 @@ fine alternative for CI (`apigeecli apis create bundle --ovr --wait`).
 plugins/huit-github/
   .claude-plugin/plugin.json             manifest
   .mcp.json                              github (hosted, headersHelper) + github-huit (wrapper)
-  bin/github-mcp-headers.sh              gh token -> Authorization header for the hosted server
-  bin/github-mcp-ghes.sh                 GITHUB_HOST + gh token -> github-mcp-server stdio
+  scripts/github-mcp-headers.sh          gh token -> Authorization header for the hosted server
+  scripts/github-mcp-ghes.sh             GITHUB_HOST + gh token -> github-mcp-server stdio
   hooks/hooks.json                       SessionStart -> scripts/check-gh-auth.sh
   scripts/check-gh-auth.sh               login nudge, silent when all is well
   skills/github-setup/SKILL.md           the bootstrap walkthrough

@@ -17,7 +17,7 @@ github/github-mcp-server `docs/oauth-login.md`.
 to avoid. `gh auth login --hostname <ghes> --web` already gives an OAuth token
 with no admin involvement.
 
-**How to apply:** keep `bin/github-mcp-ghes.sh` reading the token from
+**How to apply:** keep `scripts/github-mcp-ghes.sh` reading the token from
 `gh auth token --hostname github.huit.harvard.edu` and exporting it as
 `GITHUB_PERSONAL_ACCESS_TOKEN` (the binary's only token input; a set value
 bypasses OAuth). Revisit only if HUIT registers an OAuth App on GHES. See

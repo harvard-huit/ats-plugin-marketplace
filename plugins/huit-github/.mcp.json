@@ -3,11 +3,11 @@
     "github": {
       "type": "http",
       "url": "https://api.githubcopilot.com/mcp/",
-      "headersHelper": "${CLAUDE_PLUGIN_ROOT}/bin/github-mcp-headers.sh"
+      "headersHelper": "${CLAUDE_PLUGIN_ROOT}/scripts/github-mcp-headers.sh"
     },
     "github-huit": {
       "type": "stdio",
-      "command": "${CLAUDE_PLUGIN_ROOT}/bin/github-mcp-ghes.sh",
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/github-mcp-ghes.sh",
       "args": []
     }
   }

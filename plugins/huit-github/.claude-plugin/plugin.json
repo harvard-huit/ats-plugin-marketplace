@@ -1,7 +1,7 @@
 {
   "name": "huit-github",
   "displayName": "HUIT GitHub",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "GitHub integration for AAIS / HUIT without a Personal Access Token: GitHub's hosted MCP server for github.com and the local github-mcp-server binary for github.huit.harvard.edu, both authenticated with the OAuth token from gh device-flow login.",
   "author": {
     "name": "AAIS, Harvard University IT"
