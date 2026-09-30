@@ -1,12 +1,12 @@
 {
   "name": "huit-aws",
   "displayName": "HUIT AWS",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Log into HUIT AWS accounts from Claude Code. Default is the native aws login console-session attach into the default profile (HarvardKey in the browser, pick any role, credentials refreshed every 15 minutes, matching saved profiles refreshed too); the HUIT aws-login SAML CLI (one Okta Verify push) covers all mapped profiles at once. No IAM Identity Center, no long-lived keys.",
   "author": {
     "name": "AAIS, Harvard University IT"
   },
-  "repository": "https://github.com/harvard-huit/huit-agent-plugins",
+  "repository": "https://github.com/harvard-huit/ats-plugin-marketplace",
   "license": "MIT",
   "keywords": ["aws", "saml", "okta", "harvard", "huit"]
 }

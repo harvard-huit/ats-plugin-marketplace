@@ -1,9 +1,12 @@
-# huit-agent-plugins
+# ats-plugin-marketplace
 
-A self-hosting Claude Code plugin marketplace for the AAIS group / HUIT org.
-Repo: `harvard-huit/huit-agent-plugins` (github.com, **public** by decision
-on 2026-09-25, see the visibility item under open questions). Marketplace
-name: `huit-agent-plugins`. It holds four plugins: `huit-github`, which gives
+A self-hosting Claude Code plugin marketplace for ATS (Administrative
+Technology Services) at HUIT, maintained by the AAIS team (a team within ATS
+that supports all of ATS). Repo: `harvard-huit/ats-plugin-marketplace`
+(github.com, **public** by decision on 2026-09-25, see the visibility item
+under open questions). Marketplace name: `ats-plugin-marketplace`. It sits
+one level below the HUIT-wide `harvard-huit/huit-plugin-marketplace`; see
+"Relationship to huit-plugin-marketplace" below. It holds four plugins: `huit-github`, which gives
 people a working GitHub integration **without creating or storing a Personal
 Access Token**, `huit-aws`, which logs people into HUIT AWS accounts via
 HarvardKey (see "huit-aws plugin" below), `quiz`, multiple-choice
@@ -41,10 +44,42 @@ Status (2026-09-29): added the `huit-apigee` plugin (0.1.0) from issue #5
 with `pull`, `push`, `status` skills, eight scripts, and two references.
 `trace` and `kvm` deferred. Scripts tested live read-only against
 `ats-snow-proxy` (fetch, dirty-tree refusal, validate-only import, status,
-hosts, smoke); no revision was created and nothing was deployed. Uncommitted;
-the five proxy repos are not migrated yet.
+hosts, smoke); no revision was created and nothing was deployed. Committed as
+417d832 on `dev`, merged to `main` via PR #6 and released the same day
+(tag v1.0.3). The five proxy repos are not migrated yet, and the plugin has
+not yet been installed from the marketplace on any machine.
+Status (2026-09-30): renamed from `huit-agent-plugins` to
+`ats-plugin-marketplace` (repo, marketplace name, local checkout, project
+memory dir) to align with the org-level `huit-plugin-marketplace` and scope
+this one to ATS. Plugin versions bumped (0.3.2 / 0.2.1 / 0.1.1 / 0.1.1) for
+the new `repository` URL. Still not announced to the org.
 
 @.claude/memory/INDEX.md
+
+## Relationship to huit-plugin-marketplace
+
+`harvard-huit/huit-plugin-marketplace` (github.com, **private** as of
+2026-09-30, owned by someone else in the org) is the HUIT-wide marketplace.
+On 2026-09-30 it held only two `example-*` entries, a README, a CLAUDE.md,
+and `servers/*/server.yaml` sources. Its design differs from this repo: it
+is a data store for MCP-server plugins serving both Claude Code and Codex,
+with generation and PRs produced by a separate submission MCP server
+(`harvard-huit/huit-plugin-marketplace-submit`) rather than by editing the
+repo directly. Its README calls it "exploration".
+
+Plan (JaZahn, 2026-09-30):
+
+1. **Done:** rename this repo to `ats-plugin-marketplace` and scope it to
+   ATS, so the two names read as a hierarchy rather than as competitors.
+2. **Later:** migrate plugins that make sense HUIT-wide into
+   `huit-plugin-marketplace` and keep ATS-specific ones here. That might end
+   up being everything; decide when the org one is real. What "ATS-specific"
+   means is not settled yet. Watch for the submission-server workflow and
+   the Codex `plugin.json` requirements noted under decision 1 before
+   proposing a migration.
+
+When a plugin moves, leave a pointer in this README and bump nothing here;
+users re-install from the other marketplace.
 
 ## Why this exists
 
@@ -72,15 +107,21 @@ references do not auto-link.
 
 1. **One repo is both the plugins and the marketplace.** `.claude-plugin/marketplace.json`
    at the root lists each plugin with `"source": "./plugins/<name>"`. Users run
-   `/plugin marketplace add harvard-huit/huit-agent-plugins` then
-   `/plugin install <name>@huit-agent-plugins`. Naming history: started as
+   `/plugin marketplace add harvard-huit/ats-plugin-marketplace` then
+   `/plugin install <name>@ats-plugin-marketplace`. Naming history: started as
    `huit-github-plugin`; renamed 2026-09-19 to `huit-claude-plugins` so the
    marketplace can grow beyond GitHub (the same day `huit-github` moved from
    the repo root to `plugins/huit-github/`, version 0.1.0 to 0.2.0, when
    `huit-aws` was added); renamed 2026-09-25 to `huit-agent-plugins` to drop
-   the vendor name. The marketplace name is baked into every user's install
-   command and local registration, so **do not rename again** once anyone
-   else has added it.
+   the vendor name; renamed 2026-09-30 to `ats-plugin-marketplace` to sit
+   under the org-level `huit-plugin-marketplace` (see "Relationship to
+   huit-plugin-marketplace"). GitHub redirects the old repo URLs, but the
+   marketplace *name* does not redirect: a `known_marketplaces.json` entry
+   for `huit-agent-plugins` keeps working via the URL redirect yet shows the
+   old name, and the claude.ai account-level marketplace entry must be
+   re-pointed by hand. The marketplace name is baked into every user's
+   install command and local registration, so **do not rename again** once
+   anyone else has added it.
    **Codex / Agent Plugins (checked 2026-09-25):** OpenAI's Codex reads the
    same `skills/<name>/SKILL.md` layout and accepts
    `.claude-plugin/marketplace.json` as a legacy fallback, so a Codex port of
@@ -140,9 +181,9 @@ references do not auto-link.
 ## Layout
 
 ```
-huit-agent-plugins/
+ats-plugin-marketplace/
 ├── .claude-plugin/
-│   └── marketplace.json      # name: huit-agent-plugins, plugins: huit-github, huit-aws
+│   └── marketplace.json      # name: ats-plugin-marketplace, plugins: huit-github, huit-aws, quiz, huit-apigee
 ├── plugins/
 │   ├── huit-github/
 │   │   ├── .claude-plugin/plugin.json   # name, version, description, author, repository
@@ -200,7 +241,8 @@ in frontmatter is the invocation name (`/<plugin>:<skill>`); keep it stable.
       machine whose keyring holds a PAT, then checking `/mcp` shows `github`
       connected.
 - [x] **Where does the marketplace repo live, and at what visibility?** github.com
-      `harvard-huit/huit-agent-plugins`, **public** (decided 2026-09-25 by
+      `harvard-huit/ats-plugin-marketplace` (was `huit-agent-plugins` until
+      2026-09-30), **public** (decided 2026-09-25 by
       JaZahn). Internal was the original intent, but it would force a
       SAML-authorized github.com login before `/plugin marketplace add`, and
       the goal is that anyone can install regardless of `harvard-huit` org
@@ -455,7 +497,7 @@ version, so nobody retries the same route:
 
 ## huit-apigee plugin
 
-Designed in issue #5 (github.com `harvard-huit/huit-agent-plugins`), which
+Designed in issue #5 (github.com `harvard-huit/ats-plugin-marketplace`), which
 lists what the old `~/.claude/commands/apigee-{pull,push}.md` and the
 `aais-maestro-api/.claude/commands/` copies got wrong. First draft built
 2026-09-29: `pull`, `push`, `status` skills over REST scripts (curl plus
@@ -547,9 +589,9 @@ and point at `references/apigee-gotchas.md`).
   `claude plugin validate .`, then `... plugins/<name>` and
   `... plugins/<name>/skills` for each of `huit-github`, `huit-aws`, `quiz`,
   `huit-apigee`.
-- Test locally with `/plugin marketplace add ~/workshop/huit-agent-plugins` then
-  `/plugin install <name>@huit-agent-plugins` (or the same via `claude plugin ...`
-  on the CLI). Installs copy to `~/.claude/plugins/cache/huit-agent-plugins/<name>/<version>/`;
+- Test locally with `/plugin marketplace add ~/workshop/ats-plugin-marketplace` then
+  `/plugin install <name>@ats-plugin-marketplace` (or the same via `claude plugin ...`
+  on the CLI). Installs copy to `~/.claude/plugins/cache/ats-plugin-marketplace/<name>/<version>/`;
   `claude plugin list --json` shows `installPath`. The cache is a copy, not a
   link: after editing anything, `claude plugin uninstall` then `install` again
   (or bump the version). `.mcp.json` and hooks are read at install time; skills
@@ -560,8 +602,8 @@ and point at `references/apigee-gotchas.md`).
   background after session start (when auto-update is enabled for the
   marketplace, which is off by default for non-Anthropic marketplaces) and
   prompts `/reload-plugins` when a version changed. Without a bump users keep
-  the cached copy. Manual path: `/plugin marketplace update huit-agent-plugins`
-  then `/plugin update <name>@huit-agent-plugins`. Admins can set
+  the cached copy. Manual path: `/plugin marketplace update ats-plugin-marketplace`
+  then `/plugin update <name>@ats-plugin-marketplace`. Admins can set
   `autoUpdate: true` on the marketplace entry in managed settings. No custom
   update-check hook; the built-in mechanism covers it.
 - Scripts must be executable in git (`chmod +x`, and check `git ls-files -s`

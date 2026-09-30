@@ -133,7 +133,7 @@ person may need to restart Claude Code (or `/reload-plugins`) before the tools
 appear. If a server shows as failed in `/mcp`, run its script by hand to see
 the stderr, then fix what it reports. Get the install path from
 `claude plugin list --json` (the `installPath` field; typically
-`~/.claude/plugins/cache/huit-agent-plugins/huit-github/<version>`), then:
+`~/.claude/plugins/cache/ats-plugin-marketplace/huit-github/<version>`), then:
 
 ```sh
 "<installPath>"/bin/github-mcp-headers.sh | sed -E 's/Bearer [A-Za-z0-9_]+/Bearer <redacted>/'   # github

@@ -12,7 +12,7 @@ scopes `channels:history`, `groups:history`, `mpim:history`, `im:history` are
 not approved for any app. Either rule alone is fatal to a Slack MCP
 integration. The policy is under review, aimed at the official ChatGPT and
 Claude connectors, pending a test period and an ISDP green light. Record is
-issue #2 on harvard-huit/huit-agent-plugins.
+issue #2 on harvard-huit/ats-plugin-marketplace.
 
 **Why:** the internal-app route was tried because Slack's MCP server
 (`mcp.slack.com/mcp`) accepts any internal Slack app as its OAuth client (PKCE,
