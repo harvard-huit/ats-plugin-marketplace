@@ -1,6 +1,6 @@
 {
-  "name": "huit-agent-plugins",
-  "description": "Claude Code plugins for the AAIS group at Harvard University IT.",
+  "name": "ats-plugin-marketplace",
+  "description": "Claude Code plugins for ATS (Administrative Technology Services) at Harvard University IT, maintained by the AAIS team. Org-wide plugins belong in harvard-huit/huit-plugin-marketplace.",
   "owner": {
     "name": "AAIS, Harvard University IT"
   },

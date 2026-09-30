@@ -1,7 +1,14 @@
-# huit-agent-plugins
+# ats-plugin-marketplace
 
-Claude Code plugins for the AAIS group at Harvard University IT. This repo is
-both the marketplace and the plugins.
+Claude Code plugins for ATS (Administrative Technology Services) at Harvard
+University IT, maintained by the AAIS team. This repo is both the marketplace
+and the plugins.
+
+This is the **ATS-level** marketplace. HUIT has an org-wide one,
+[`harvard-huit/huit-plugin-marketplace`](https://github.com/harvard-huit/huit-plugin-marketplace),
+which is where plugins useful across all of HUIT should end up. Plugins here
+will move there as it matures; anything ATS-specific stays here. Until a
+plugin has moved, install it from here.
 
 | Plugin | What it does | Entry point |
 |---|---|---|
@@ -12,16 +19,15 @@ both the marketplace and the plugins.
 
 ## Install
 
-This repo is internal to the `harvard-huit` enterprise on github.com, so first
-make sure `gh` is logged in there (`gh auth login --hostname github.com --web`).
-Then, inside Claude Code:
+This repo is public on github.com, so no GitHub login is needed to add it.
+Inside Claude Code:
 
 ```
-/plugin marketplace add harvard-huit/huit-agent-plugins
-/plugin install huit-github@huit-agent-plugins
-/plugin install huit-aws@huit-agent-plugins
-/plugin install quiz@huit-agent-plugins
-/plugin install huit-apigee@huit-agent-plugins
+/plugin marketplace add harvard-huit/ats-plugin-marketplace
+/plugin install huit-github@ats-plugin-marketplace
+/plugin install huit-aws@ats-plugin-marketplace
+/plugin install quiz@ats-plugin-marketplace
+/plugin install huit-apigee@ats-plugin-marketplace
 ```
 
 Install whichever you need. You approve every command a skill proposes.
@@ -31,15 +37,15 @@ Install whichever you need. You approve every command a skill proposes.
 Claude Code checks marketplaces for updates shortly after a session starts and
 tells you to run `/reload-plugins` when something changed, but only if
 auto-update is enabled for this marketplace. It is off by default for
-non-Anthropic marketplaces: open `/plugin`, find `huit-agent-plugins`, and turn
+non-Anthropic marketplaces: open `/plugin`, find `ats-plugin-marketplace`, and turn
 auto-update on. To update by hand:
 
 ```
-/plugin marketplace update huit-agent-plugins
-/plugin update huit-github@huit-agent-plugins
-/plugin update huit-aws@huit-agent-plugins
-/plugin update quiz@huit-agent-plugins
-/plugin update huit-apigee@huit-agent-plugins
+/plugin marketplace update ats-plugin-marketplace
+/plugin update huit-github@ats-plugin-marketplace
+/plugin update huit-aws@ats-plugin-marketplace
+/plugin update quiz@ats-plugin-marketplace
+/plugin update huit-apigee@ats-plugin-marketplace
 /reload-plugins
 ```
 
