@@ -1,6 +1,6 @@
 ---
 name: status
-description: Show which revision of an Apigee X proxy is deployed in each environment across the HUIT orgs (nonprod, preprod, prod), plus the latest imported revision and gateway hostnames. Read-only. Use when the user asks what revision is live, what is deployed where, whether dev is ahead of prod or stage, which org hosts an environment, what the gateway host for an env is, or whether a proxy exists in an org.
+description: Show which revision of an Apigee X proxy is deployed in each environment across the HUIT orgs (nonprod, preprod, prod), plus the latest imported revision and gateway hostnames. Read-only. Use when the user asks what revision is live, what is deployed where, whether dev is ahead of prod or stage, which org hosts an environment, what the gateway host for an env is, or whether a proxy exists in an org. Also use when `gcloud auth login` or `gcloud auth print-access-token` fails for a HUIT user, including "This site can't be reached", ERR_SOCKET_NOT_CONNECTED, or a redirect to accounts.youtube.com during the browser sign-in; the login section below has the known cause.
 ---
 
 # Apigee status (HUIT)
@@ -53,4 +53,16 @@ own `go.test.apis.huit.harvard.edu`. Details in
 If either script exits 2 with `gcloud login expired or missing`, the person
 runs `gcloud auth login` (or `gcloud auth login --no-launch-browser` on a host
 without a browser) in their own terminal. Do not attempt the browser flow
-from here and never print a token.
+from here and never print a token. A single `print-access-token` failure can
+be transient; retry once before sending them to log in.
+
+Tell them this up front, because it is not guessable: **if the browser dies
+on `accounts.youtube.com` ("This site can't be reached",
+`ERR_SOCKET_NOT_CONNECTED`) right after they pick their Harvard account, the
+local network is blocking YouTube and the Harvard VPN will not help**, since
+Cisco Secure Client excludes `youtube.com` from the tunnel by policy. Google
+Workspace sign-in needs that host once. Fix: do the browser step on a phone
+hotspot, paste the code back, reconnect the VPN. Diagnosis commands and the
+full explanation are in `${CLAUDE_PLUGIN_ROOT}/references/apigee-gotchas.md`
+under "gcloud login on networks that filter YouTube". Upgrading gcloud does
+not fix it.
