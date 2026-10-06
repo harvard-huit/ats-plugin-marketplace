@@ -16,6 +16,7 @@ plugin has moved, install it from here.
 | `huit-aws` | Log into HUIT AWS accounts with HarvardKey, from inside Claude Code | `/huit-aws:aws-login [account]` |
 | `quiz` | Multiple-choice comprehension checks on the current session or on the repo's gotchas | `/quiz:session`, `/quiz:project` |
 | `huit-apigee` | Pull, push, and inspect Apigee X proxy bundles on the HUIT gateway without clobbering edits or the wrong org | `/huit-apigee:pull`, `/huit-apigee:push`, `/huit-apigee:status` |
+| `huit-maestro` | Ask Claude about the Maestro scheduler (job status, why a job is waiting or failed, run history, PagerDuty linkage) with a HarvardKey login and no token | `/huit-maestro:maestro-setup`, then `/mcp` |
 
 ## Install
 
@@ -28,6 +29,7 @@ Inside Claude Code:
 /plugin install huit-aws@ats-plugin-marketplace
 /plugin install quiz@ats-plugin-marketplace
 /plugin install huit-apigee@ats-plugin-marketplace
+/plugin install huit-maestro@ats-plugin-marketplace
 ```
 
 Install whichever you need. You approve every command a skill proposes.
@@ -46,6 +48,7 @@ auto-update on. To update by hand:
 /plugin update huit-aws@ats-plugin-marketplace
 /plugin update quiz@ats-plugin-marketplace
 /plugin update huit-apigee@ats-plugin-marketplace
+/plugin update huit-maestro@ats-plugin-marketplace
 /reload-plugins
 ```
 
@@ -218,10 +221,51 @@ Requirements: `gcloud` (logged in; `gcloud auth login --no-launch-browser` on
 Cloud9), `curl`, `python3`, `zip`/`unzip`. No apigeecli needed; it remains a
 fine alternative for CI (`apigeecli apis create bundle --ovr --wait`).
 
+## huit-maestro
+
+Connects Claude to the Maestro Utility MCP server, which answers questions
+about HUIT's Maestro scheduler (IBM Workload Automation) from its own data:
+which jobstreams exist in a plan and their status, why a job is waiting or
+what failed, recent runs of a job, who submitted an ad-hoc job, the PagerDuty
+alert and ServiceNow ticket for a failed run, and the scheduler's engine-side
+log of a run from Splunk. Everything is read-only; nothing here can submit,
+cancel, or rerun a job.
+
+The plugin is one MCP server declaration and a setup skill. Install it, then
+type `/mcp`, pick `maestro`, and choose **Authenticate**: a browser tab opens
+on the Maestro Utility sign-in page, you sign in with HarvardKey, click
+**Allow** on the consent page, and the tab sends you back. That is the whole
+login. There is no client ID, secret, or API key: the server registers Claude
+Code as a client on the fly, and the token it issues is yours alone (one hour,
+renewed silently for up to 30 days). You can see and revoke every client
+holding a token for you under **Connected apps** on the Maestro Utility home
+page.
+
+Run `/huit-maestro:maestro-setup` if anything is unclear or the server shows
+as needing authentication; it checks for a hand-added duplicate of the server,
+walks through `/mcp`, and knows the common failures.
+
+Who it is for: people in the Maestro admins or app-users HarvardKey groups.
+Anyone else can complete the sign-in but gets "a maestro role is required" at
+the consent step; access is requested the same way as for the Maestro Utility
+web app.
+
+If you added `maestro` yourself earlier with `claude mcp add`, remove that
+entry after installing the plugin (`claude mcp remove maestro -s user`), or
+you will have two copies of every tool. The plugin points at production;
+other tiers expose the same path on their own host and can be added by hand
+under another name.
+
+Admin notes: the Maestro Utility application is the OAuth authorization
+server, in front of HarvardKey. Claude Code's MCP configuration is local to
+the machine and authenticates directly against that application, not through
+Anthropic. Every tool call is logged server-side with the user and the client
+that made it, and rate-limited per token.
+
 ## Layout
 
 ```
-.claude-plugin/marketplace.json          the marketplace (four plugins)
+.claude-plugin/marketplace.json          the marketplace (five plugins)
 plugins/huit-github/
   .claude-plugin/plugin.json             manifest
   .mcp.json                              github (hosted, headersHelper) + github-huit (wrapper)
@@ -250,6 +294,10 @@ plugins/huit-apigee/
   references/config.md                   .apigee.json / .apigee-state.json schema and HUIT defaults
   references/apigee-gotchas.md           the consolidated Apigee knowledge
   skills/pull, push, status/SKILL.md
+plugins/huit-maestro/
+  .claude-plugin/plugin.json             manifest
+  .mcp.json                              maestro (hosted, OAuth with dynamic client registration)
+  skills/maestro-setup/SKILL.md          the /mcp walkthrough and troubleshooting
 ```
 
 Validate before committing:
@@ -264,6 +312,8 @@ claude plugin validate plugins/quiz
 claude plugin validate plugins/quiz/skills
 claude plugin validate plugins/huit-apigee
 claude plugin validate plugins/huit-apigee/skills
+claude plugin validate plugins/huit-maestro
+claude plugin validate plugins/huit-maestro/skills
 ```
 
 Bump the plugin's `version` on every change you publish; that field is what

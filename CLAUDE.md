@@ -6,14 +6,15 @@ that supports all of ATS). Repo: `harvard-huit/ats-plugin-marketplace`
 (github.com, **public** by decision on 2026-09-25, see the visibility item
 under open questions). Marketplace name: `ats-plugin-marketplace`. It sits
 one level below the HUIT-wide `harvard-huit/huit-plugin-marketplace`; see
-"Relationship to huit-plugin-marketplace" below. It holds four plugins: `huit-github`, which gives
+"Relationship to huit-plugin-marketplace" below. It holds five plugins: `huit-github`, which gives
 people a working GitHub integration **without creating or storing a Personal
 Access Token**, `huit-aws`, which logs people into HUIT AWS accounts via
 HarvardKey (see "huit-aws plugin" below), `quiz`, multiple-choice
 comprehension checks on the current session or a repo's gotchas (see "quiz
-plugin" below), and `huit-apigee`, pull/push/status for Apigee X proxy
-bundles (see "huit-apigee plugin" below). Onboarding is two slash commands
-per plugin.
+plugin" below), `huit-apigee`, pull/push/status for Apigee X proxy
+bundles (see "huit-apigee plugin" below), and `huit-maestro`, the Maestro
+Utility MCP server over OAuth (see "huit-maestro plugin" below). Onboarding
+is two slash commands per plugin.
 
 Status (2026-09-19): restructured to `plugins/<name>/`, both plugins validate
 and install locally. The GHES path is verified end to end. Nothing is committed
@@ -57,6 +58,11 @@ Status (2026-09-30, later): claude.ai marketplace sync **skipped**
 `huit-github` because it shipped a top-level `bin/` directory (see the
 convention below). Both wrapper scripts moved to `scripts/`; `huit-github`
 bumped to 0.3.3.
+Status (2026-10-06): added the `huit-maestro` plugin (0.1.0) from issue #4:
+one `.mcp.json` entry pointing at the prod Maestro Utility MCP endpoint and a
+`maestro-setup` skill. No scripts, no hooks. Uncommitted; the verification
+gate in issue #4 (a real `/mcp` authenticate plus `list_plans` from the
+installed plugin) is still open.
 
 @.claude/memory/INDEX.md
 
@@ -187,7 +193,7 @@ references do not auto-link.
 ```
 ats-plugin-marketplace/
 ├── .claude-plugin/
-│   └── marketplace.json      # name: ats-plugin-marketplace, plugins: huit-github, huit-aws, quiz, huit-apigee
+│   └── marketplace.json      # name: ats-plugin-marketplace, plugins: huit-github, huit-aws, quiz, huit-apigee, huit-maestro
 ├── plugins/
 │   ├── huit-github/
 │   │   ├── .claude-plugin/plugin.json   # name, version, description, author, repository
@@ -205,12 +211,16 @@ ats-plugin-marketplace/
 │   │   ├── references/quiz-format.md    # shared: writing questions, asking, grading
 │   │   ├── skills/session/SKILL.md      # /quiz:session, the default "quiz me"
 │   │   └── skills/project/SKILL.md      # /quiz:project, gotchas of the repo
-│   └── huit-apigee/
+│   ├── huit-apigee/
+│   │   ├── .claude-plugin/plugin.json
+│   │   ├── scripts/                     # lib, fetch, import, deploy, smoke, status, hosts, lint-bundle
+│   │   ├── references/config.md         # .apigee.json / .apigee-state.json, verified HUIT org+host table
+│   │   ├── references/apigee-gotchas.md # consolidated Apigee knowledge from five proxy repos
+│   │   └── skills/{pull,push,status}/SKILL.md
+│   └── huit-maestro/
 │       ├── .claude-plugin/plugin.json
-│       ├── scripts/                     # lib, fetch, import, deploy, smoke, status, hosts, lint-bundle
-│       ├── references/config.md         # .apigee.json / .apigee-state.json, verified HUIT org+host table
-│       ├── references/apigee-gotchas.md # consolidated Apigee knowledge from five proxy repos
-│       └── skills/{pull,push,status}/SKILL.md
+│       ├── .mcp.json                    # maestro: http, prod Maestro Utility /maestro-util/mcp, OAuth via /mcp
+│       └── skills/maestro-setup/SKILL.md # /mcp walkthrough, duplicate-server check, troubleshooting
 ├── README.md                 # user-facing: install, updates, one section per plugin
 ├── CLAUDE.md                 # this file
 └── .claude/memory/INDEX.md   # committed project memory (portable across machines)
@@ -585,14 +595,70 @@ and point at `references/apigee-gotchas.md`).
       allowlist (`status.sh`, `hosts.sh`, `lint-bundle.sh`); never
       `gcloud auth print-access-token`.
 
+## huit-maestro plugin
+
+Designed in issue #4 (2026-09-29), built 2026-10-06. Wraps the MCP server
+that the Maestro Utility app (`harvard-huit/aais-maestro-util`, internal
+repo) serves at `/maestro-util/mcp`. That app is its own OAuth 2.1
+authorization server in front of HarvardKey, with dynamic client
+registration, so Claude Code's standard `/mcp` authenticate flow works. The
+plugin is therefore the thinnest one here: `.mcp.json` with one `http`
+server named `maestro`, plus the `maestro-setup` skill. No `headersHelper`,
+no wrapper, no hook. Contrast decision 2 above, where GitHub's lack of DCR
+forced the `gh`-token workaround.
+
+- **URL is production:** `https://aais-services-def.ats.cloud.huit.harvard.edu/maestro-util/mcp`.
+  Both prod and dev (`aais-services-def.dev.ats.cloud...`) answered an
+  unauthenticated `initialize` with 401 plus a `WWW-Authenticate` header
+  carrying `resource_metadata`, and the prod RFC 9728 document lists the
+  authorization server and the single `maestro:read` scope (checked
+  2026-10-06). The `maestro-util.dev.aais.huit.harvard.edu` vanity host in
+  the Maestro repo's `docs/mcp-client-setup.md` is not routed; that doc
+  still needs fixing (issue #4 to-do).
+- **The skill does not describe the tools.** The server returns
+  `instructions` on `initialize` and each tool carries its own description;
+  a copy here would drift. The skill covers `/mcp`, the hand-added-duplicate
+  check (`claude mcp get maestro`), the role error, token lifetimes (1h
+  access, 30d refresh), the per-token limit (60 calls/min), the Splunk
+  not-configured case, and three usage rules worth repeating: read-only, job
+  numbers recycle, `get_job_log` is engine-side only.
+- **Audience:** only people in the maestro admins or app-users HarvardKey
+  groups. Everyone else can register a client but gets "a maestro role is
+  required" at consent.
+- **Disclosure:** the prod endpoint URL is public in this repo. Same class as
+  the GHES hostname and the Okta link: the ALB is public, bearer auth guards
+  every call, open registration grants nothing without a HarvardKey login by
+  a role holder. Before announcing: rate-limit `/oauth/register/` and
+  `/oauth/token/` in the Maestro app (not done there as of 2026-09-19) and
+  mention the endpoint to HUIT security with the Okta link.
+- **Verification gate (open):** one clean `/mcp` authenticate plus a
+  `list_plans` call from the *installed* plugin, by someone other than
+  JaZahn. The Maestro repo's notes say the deployed endpoint had not been
+  exercised from a real Claude Code client as of 2026-09-19. JaZahn's
+  machine has a hand-added user-scope `maestro` entry at the prod URL; it
+  must be removed after installing the plugin (the skill's step 1), and the
+  `mcp__maestro__*` allowlist in `aais-maestro-util/.claude/settings.local.json`
+  may need the plugin's tool-name form once that is observed.
+
+### To do
+
+- [ ] Verification gate above, then commit, release (claude.ai sync follows
+      the latest release tag, see project memory), and install from the
+      marketplace.
+- [ ] Fix the dev-vanity-host URL in `aais-maestro-util/docs/mcp-client-setup.md`
+      and point it at this plugin as the preferred Claude Code path.
+- [ ] Record the observed plugin tool-name form here once seen in a session.
+- [ ] Later, if asked: a `maestro-lookup` skill with query patterns. Not
+      before people have used the bare tools for a while.
+
 ## Conventions
 
 - Validate before every commit. Each `claude plugin validate <dir>` call checks
   one thing: the marketplace manifest for `.`, a plugin manifest for a plugin
-  dir, and skill frontmatter for a `skills` dir. So run all nine:
+  dir, and skill frontmatter for a `skills` dir. So run all eleven:
   `claude plugin validate .`, then `... plugins/<name>` and
   `... plugins/<name>/skills` for each of `huit-github`, `huit-aws`, `quiz`,
-  `huit-apigee`.
+  `huit-apigee`, `huit-maestro`.
 - Test locally with `/plugin marketplace add ~/workshop/ats-plugin-marketplace` then
   `/plugin install <name>@ats-plugin-marketplace` (or the same via `claude plugin ...`
   on the CLI). Installs copy to `~/.claude/plugins/cache/ats-plugin-marketplace/<name>/<version>/`;
