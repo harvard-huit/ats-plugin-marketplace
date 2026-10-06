@@ -53,6 +53,11 @@ Status (2026-09-30): renamed from `huit-agent-plugins` to
 memory dir) to align with the org-level `huit-plugin-marketplace` and scope
 this one to ATS. Plugin versions bumped (0.3.2 / 0.2.1 / 0.1.1 / 0.1.1) for
 the new `repository` URL. Still not announced to the org.
+Status (2026-10-04): `huit-apigee` 0.1.2 adds the "gcloud login on networks
+that filter YouTube" gotcha (Google Workspace sign-in needs
+`accounts.youtube.com`; the Harvard VPN's dynamic tunnel exclusion sends it
+out the local network), a trigger phrase on the `status` skill so a reported
+`gcloud auth login` failure loads it, and a heads-up at every "no login" step.
 
 @.claude/memory/INDEX.md
 

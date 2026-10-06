@@ -165,3 +165,42 @@ Apigee behavior confirmed here.
 - The Apigee JavaScript runtime is Rhino, not Node: no modern ES features,
   and `Date` handling differs. `IncludeURL` files share one global scope with
   the `ResourceURL` script.
+
+## gcloud login on networks that filter YouTube
+
+*Observed 2026-10-04 from a café on the Harvard VPN; cost most of a morning.*
+
+- **Symptom.** `gcloud auth login` (loopback flow or `--no-launch-browser`)
+  gets through HarvardKey, then right after the g.harvard.edu account is
+  chosen the browser shows "This site can't be reached",
+  `ERR_SOCKET_NOT_CONNECTED`, on
+  `https://accounts.youtube.com/accounts/SetSID?...`. Google Workspace
+  sign-in always bounces through `accounts.youtube.com` once to sync the
+  session cookie, so any network that blocks YouTube (cafés, hotels, some
+  guest Wi-Fi) breaks every Google OAuth login, gcloud included. An old gcloud
+  is not the cause; upgrading does not help.
+- **Why the VPN does not help.** Cisco Secure Client on `vpn.harvard.edu`
+  reports `Tunnel Mode: Tunnel All Traffic` but the headend pushes a
+  **Dynamic Tunnel Exclusion** list (`youtube.com`, `ytimg.com`,
+  `googleapis.com`, `gstatic.com`, `gmail.com`, plus Zoom, Teams, Office
+  365, Netflix, Apple and others) that sends those hostnames straight out the
+  local network. It is server policy; nothing in the client disables it and
+  the local profile XML is rewritten on every connect. Note `googleapis.com`
+  is on the list, so `apigee.googleapis.com` management calls also bypass the
+  tunnel and depend on what the local network allows.
+- **Diagnose in three commands.**
+  ```sh
+  /opt/cisco/secureclient/bin/vpn stats | grep -E 'Tunnel Mode|Dynamic Tunnel'
+  route -n get 142.250.191.14      # a Google IP: "interface: en0" means it bypasses the tunnel
+  curl -s -o /dev/null -w '%{http_code}\n' --max-time 10 https://accounts.youtube.com/
+  ```
+  `000` from the last one while `https://accounts.google.com/` answers is the
+  signature. An empty `lsof -iTCP:8085` is normal for `--no-launch-browser`
+  (that mode opens no local port) and is not the problem.
+- **Fix.** Leave `gcloud auth login --no-launch-browser` waiting in its
+  terminal, move the browser to a phone hotspot or any network that allows
+  YouTube, finish the sign-in, copy the verification code, switch back, paste.
+  The code does not care which network produced it. Reconnect the VPN before
+  touching nonprod Apigee. The durable fix is a request to HUIT networking to
+  take `youtube.com` (or at least `accounts.youtube.com`) off the exclusion
+  list.
