@@ -1,7 +1,7 @@
 {
   "name": "huit-apigee",
   "displayName": "HUIT Apigee",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Pull, push, and inspect Apigee X proxy bundles for the HUIT ADEX gateway from Claude Code. Refuses to overwrite uncommitted bundle edits, checks for upstream drift, validates and diffs before importing, resolves the right org for each environment (nonprod, preprod, prod), records the previous revision for rollback, and ships the accumulated Apigee gotchas (conditions, path rewriting, target boundary, BasicAuth, import endpoint) as a reference.",
   "author": {
     "name": "AAIS, Harvard University IT"

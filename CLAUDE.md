@@ -63,6 +63,11 @@ one `.mcp.json` entry pointing at the prod Maestro Utility MCP endpoint and a
 `maestro-setup` skill. No scripts, no hooks. Uncommitted; the verification
 gate in issue #4 (a real `/mcp` authenticate plus `list_plans` from the
 installed plugin) is still open.
+Status (2026-10-04): `huit-apigee` 0.1.2 adds the "gcloud login on networks
+that filter YouTube" gotcha (Google Workspace sign-in needs
+`accounts.youtube.com`; the Harvard VPN's dynamic tunnel exclusion sends it
+out the local network), a trigger phrase on the `status` skill so a reported
+`gcloud auth login` failure loads it, and a heads-up at every "no login" step.
 
 @.claude/memory/INDEX.md
 
