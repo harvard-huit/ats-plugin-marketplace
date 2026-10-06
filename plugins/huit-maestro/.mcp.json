@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "maestro": {
+      "type": "http",
+      "url": "https://aais-services-def.ats.cloud.huit.harvard.edu/maestro-util/mcp"
+    }
+  }
+}

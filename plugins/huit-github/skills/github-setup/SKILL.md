@@ -14,8 +14,8 @@ Two GitHubs are in play. Ask which the person needs before installing anything.
 
 | Host | Org | How Claude reaches it | Auth |
 |---|---|---|---|
-| github.com | `harvard-huit` (SAML SSO) | GitHub's hosted MCP server (`github`), token supplied by `bin/github-mcp-headers.sh` | `gh auth login` device flow |
-| github.huit.harvard.edu (GHES) | `HUIT` | local `github-mcp-server` behind `bin/github-mcp-ghes.sh` (`github-huit`) | `gh auth login` device flow |
+| github.com | `harvard-huit` (SAML SSO) | GitHub's hosted MCP server (`github`), token supplied by `scripts/github-mcp-headers.sh` | `gh auth login` device flow |
+| github.huit.harvard.edu (GHES) | `HUIT` | local `github-mcp-server` behind `scripts/github-mcp-ghes.sh` (`github-huit`) | `gh auth login` device flow |
 
 Both MCP servers read the token `gh` stored, so the `gh` login is the whole
 authentication story. Do **not** send the person to `/mcp` to log in to
@@ -136,8 +136,8 @@ the stderr, then fix what it reports. Get the install path from
 `~/.claude/plugins/cache/ats-plugin-marketplace/huit-github/<version>`), then:
 
 ```sh
-"<installPath>"/bin/github-mcp-headers.sh | sed -E 's/Bearer [A-Za-z0-9_]+/Bearer <redacted>/'   # github
-"<installPath>"/bin/github-mcp-ghes.sh </dev/null                                                  # github-huit
+"<installPath>"/scripts/github-mcp-headers.sh | sed -E 's/Bearer [A-Za-z0-9_]+/Bearer <redacted>/'   # github
+"<installPath>"/scripts/github-mcp-ghes.sh </dev/null                                                  # github-huit
 ```
 
 Always pipe the headers helper through that `sed` so the token never lands in

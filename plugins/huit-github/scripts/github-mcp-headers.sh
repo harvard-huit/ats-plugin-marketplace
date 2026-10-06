@@ -20,7 +20,7 @@ log() { printf 'github: %s\n' "$*" >&2; }
 # Helpers may be spawned with a minimal PATH; add the usual gh locations.
 export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin:/home/linuxbrew/.linuxbrew/bin:$HOME/.local/bin"
 
-# Token precedence (same as bin/github-mcp-ghes.sh):
+# Token precedence (same as scripts/github-mcp-ghes.sh):
 #   1. GITHUB_PERSONAL_ACCESS_TOKEN already in the environment (explicit override)
 #   2. gh's stored OAuth token for github.com (the intended path)
 token="${GITHUB_PERSONAL_ACCESS_TOKEN:-}"

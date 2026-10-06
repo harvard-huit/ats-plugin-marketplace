@@ -6,7 +6,7 @@ metadata:
 ---
 
 When testing anything in this repo that emits a credential on its success path
-(`bin/github-mcp-headers.sh`, `gh auth token`), always redact in the same
+(`scripts/github-mcp-headers.sh`, `gh auth token`), always redact in the same
 pipeline: `| sed -E 's/Bearer [A-Za-z0-9_]+/Bearer <redacted>/'` or
 `| cut -c1-4`. Do this even when you expect the failure path to run.
 

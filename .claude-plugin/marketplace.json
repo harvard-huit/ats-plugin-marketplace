@@ -48,6 +48,17 @@
         "gcloud",
         "huit"
       ]
+    },
+    {
+      "name": "huit-maestro",
+      "source": "./plugins/huit-maestro",
+      "description": "Ask Claude about HUIT's Maestro (IBM Workload Automation) scheduler through the read-only Maestro Utility MCP server: jobstream status, why a job is waiting or failed, run history, who submitted an ad-hoc job, PagerDuty/ServiceNow linkage, engine log of a run. HarvardKey login through /mcp; no token or secret. Skill /huit-maestro:maestro-setup.",
+      "category": "productivity",
+      "tags": [
+        "maestro",
+        "mcp",
+        "huit"
+      ]
     }
   ]
 }

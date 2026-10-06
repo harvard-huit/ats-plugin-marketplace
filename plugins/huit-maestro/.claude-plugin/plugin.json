@@ -1,0 +1,12 @@
+{
+  "name": "huit-maestro",
+  "displayName": "HUIT Maestro",
+  "version": "0.1.0",
+  "description": "Ask Claude about HUIT's Maestro (IBM Workload Automation) scheduler: jobstream status, why a job is waiting or failed, run history, who submitted an ad-hoc job, PagerDuty and ServiceNow linkage, and the engine-side log of a run. Read-only, via the Maestro Utility MCP server. Authentication is a HarvardKey login in your browser through /mcp; no token, client ID, or secret to distribute.",
+  "author": {
+    "name": "AAIS, Harvard University IT"
+  },
+  "repository": "https://github.com/harvard-huit/ats-plugin-marketplace",
+  "license": "MIT",
+  "keywords": ["maestro", "tws", "workload-automation", "mcp", "harvard", "huit"]
+}
