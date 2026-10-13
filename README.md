@@ -17,6 +17,7 @@ plugin has moved, install it from here.
 | `quiz` | Multiple-choice comprehension checks on the current session or on the repo's gotchas | `/quiz:session`, `/quiz:project` |
 | `huit-apigee` | Pull, push, and inspect Apigee X proxy bundles on the HUIT gateway without clobbering edits or the wrong org | `/huit-apigee:pull`, `/huit-apigee:push`, `/huit-apigee:status` |
 | `huit-maestro` | Ask Claude about the Maestro scheduler (job status, why a job is waiting or failed, run history, PagerDuty linkage) with a HarvardKey login and no token | `/huit-maestro:maestro-setup`, then `/mcp` |
+| `huit-servicenow-dev` | Ask Claude about ServiceNow records (incidents, changes, requests, CMDB, people, knowledge) as yourself, read-only, **dev tier** against `harvardtest`; VPN required, no token | `/huit-servicenow-dev:servicenow-setup`, then `/mcp` |
 
 ## Install
 
@@ -30,6 +31,7 @@ Inside Claude Code:
 /plugin install quiz@ats-plugin-marketplace
 /plugin install huit-apigee@ats-plugin-marketplace
 /plugin install huit-maestro@ats-plugin-marketplace
+/plugin install huit-servicenow-dev@ats-plugin-marketplace
 ```
 
 Install whichever you need. You approve every command a skill proposes.
@@ -49,6 +51,7 @@ auto-update on. To update by hand:
 /plugin update quiz@ats-plugin-marketplace
 /plugin update huit-apigee@ats-plugin-marketplace
 /plugin update huit-maestro@ats-plugin-marketplace
+/plugin update huit-servicenow-dev@ats-plugin-marketplace
 /reload-plugins
 ```
 
@@ -262,10 +265,64 @@ the machine and authenticates directly against that application, not through
 Anthropic. Every tool call is logged server-side with the user and the client
 that made it, and rate-limited per token.
 
+## huit-servicenow-dev
+
+Connects Claude to HUIT's hosted ServiceNow MCP server (snow-mcp), **dev
+tier**. It answers questions about ServiceNow records from the `harvardtest`
+instance: incidents, changes, requests and RITMs, catalog items, CMDB CIs,
+people and groups, knowledge articles, approvals, attachments, record history,
+and any table your account can see, using the same encoded-query syntax as a
+UI list filter. Everything is read-only; the hosted server removes every
+create, update, and delete tool. Every call runs as you, under your own
+ServiceNow ACLs, so you see exactly what you would see in a list view.
+
+This plugin is temporary. It exists so people can try the dev server now;
+when the production server is published it will be in the org-level
+[`harvard-huit/huit-plugin-marketplace`](https://github.com/harvard-huit/huit-plugin-marketplace),
+and this plugin will be retired with a pointer here. Its name carries `-dev`
+so it can never shadow that one.
+
+**You must be on the HUIT cloudadmin VPN**, for the whole login and for every
+call. The hostname resolves to private addresses, and the OAuth redirect is
+followed by your browser. A quick check:
+
+```
+curl https://snow.mcp.dev.cloud.huit.harvard.edu/health
+```
+
+`{"status":"ok"}` means you are connected; a hang means VPN, not server.
+
+The plugin is one MCP server declaration and a setup skill. Install it, then
+type `/mcp`, pick `service-now`, and choose **Authenticate**: a browser tab
+opens on the ServiceNow sign-in page (through HarvardKey SSO), you allow the
+consent page, and the tab sends you back. There is no client ID, secret, or
+API key: the server registers Claude Code as a client on the fly and proxies
+the login to ServiceNow itself, so it never sees your password. The
+ServiceNow token is refreshed silently for about 100 days, after which `/mcp`
+asks you to sign in again.
+
+Run `/huit-servicenow-dev:servicenow-setup` if anything is unclear or the
+server shows as needing authentication; it checks the VPN, looks for a
+hand-added duplicate of the server, walks through `/mcp`, and knows the
+common failures. Verify with the `whoami` tool: it must return **your**
+ServiceNow user, not a service account.
+
+If you added the server yourself earlier with `claude mcp add` (as
+`service-now` or `snow`), remove that entry after installing the plugin, or
+you will have two copies of every tool.
+
+Admin notes: the snow-mcp server (`harvard-huit/hcdo-ia-snow-mcp`, internal
+repo) presents a standard MCP OAuth surface and proxies the authorization-code
+flow to the ServiceNow instance's own OAuth endpoints. Claude Code's MCP
+configuration is local to the machine and authenticates directly against that
+server, not through Anthropic. Per-user ServiceNow tokens are stored encrypted
+server-side; the hosted deployment runs read-only and ServiceNow ACLs apply
+on top.
+
 ## Layout
 
 ```
-.claude-plugin/marketplace.json          the marketplace (five plugins)
+.claude-plugin/marketplace.json          the marketplace (six plugins)
 plugins/huit-github/
   .claude-plugin/plugin.json             manifest
   .mcp.json                              github (hosted, headersHelper) + github-huit (wrapper)
@@ -298,6 +355,10 @@ plugins/huit-maestro/
   .claude-plugin/plugin.json             manifest
   .mcp.json                              maestro (hosted, OAuth with dynamic client registration)
   skills/maestro-setup/SKILL.md          the /mcp walkthrough and troubleshooting
+plugins/huit-servicenow-dev/
+  .claude-plugin/plugin.json             manifest
+  .mcp.json                              service-now (hosted dev snow-mcp, OAuth with dynamic client registration)
+  skills/servicenow-setup/SKILL.md       VPN check, /mcp walkthrough, troubleshooting
 ```
 
 Validate before committing:
@@ -314,6 +375,8 @@ claude plugin validate plugins/huit-apigee
 claude plugin validate plugins/huit-apigee/skills
 claude plugin validate plugins/huit-maestro
 claude plugin validate plugins/huit-maestro/skills
+claude plugin validate plugins/huit-servicenow-dev
+claude plugin validate plugins/huit-servicenow-dev/skills
 ```
 
 Bump the plugin's `version` on every change you publish; that field is what

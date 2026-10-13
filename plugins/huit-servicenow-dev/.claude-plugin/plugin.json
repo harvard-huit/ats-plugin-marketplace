@@ -1,0 +1,12 @@
+{
+  "name": "huit-servicenow-dev",
+  "displayName": "HUIT ServiceNow (dev)",
+  "version": "0.1.0",
+  "description": "Ask Claude about ServiceNow records through HUIT's hosted snow-mcp server, dev tier: incidents, changes, requests, catalog items, CMDB, people and groups, knowledge, approvals, attachments, history, any table you can see in the UI. Read-only; every call runs as you with your own ServiceNow ACLs. Authentication is a ServiceNow (HarvardKey SSO) login in your browser through /mcp; no token, client ID, or secret. Requires the HUIT cloudadmin VPN. Temporary: the production server will be published in harvard-huit/huit-plugin-marketplace.",
+  "author": {
+    "name": "AAIS, Harvard University IT"
+  },
+  "repository": "https://github.com/harvard-huit/ats-plugin-marketplace",
+  "license": "MIT",
+  "keywords": ["servicenow", "snow", "itsm", "mcp", "harvard", "huit"]
+}
