@@ -65,11 +65,16 @@ one `.mcp.json` entry pointing at the prod Maestro Utility MCP endpoint and a
 `maestro-setup` skill. No scripts, no hooks. Uncommitted; the verification
 gate in issue #4 (a real `/mcp` authenticate plus `list_plans` from the
 installed plugin) is still open.
+Status (2026-10-04): `huit-apigee` 0.1.2 adds the "gcloud login on networks
+that filter YouTube" gotcha (Google Workspace sign-in needs
+`accounts.youtube.com`; the Harvard VPN's dynamic tunnel exclusion sends it
+out the local network), a trigger phrase on the `status` skill so a reported
+`gcloud auth login` failure loads it, and a heads-up at every "no login" step.
 Status (2026-10-13): added the `huit-servicenow-dev` plugin (0.1.0) from
 issue #12: one `.mcp.json` entry (`service-now`) pointing at the dev snow-mcp
 endpoint and a `servicenow-setup` skill. Same shape as `huit-maestro`.
 Endpoint probed live (401 + RFC 9728 metadata, DCR, scope `table_read`);
-not yet installed or authenticated from the plugin. Uncommitted.
+not yet installed or authenticated from the plugin.
 
 @.claude/memory/INDEX.md
 

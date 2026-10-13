@@ -39,6 +39,11 @@ gcloud auth print-access-token >/dev/null 2>&1 && echo "gcloud: ok" || echo "gcl
 - "no login": tell the person to run `gcloud auth login` (or
   `gcloud auth login --no-launch-browser` on Cloud9 or SSH) in their own
   terminal, then continue. The browser flow cannot be completed from here.
+  Add the one warning they cannot guess: if the browser fails on
+  `accounts.youtube.com` right after they choose their Harvard account, the
+  local network blocks YouTube and the VPN does not cover it (gotchas
+  reference, "gcloud login on networks that filter YouTube"); the fix is a
+  hotspot for the browser step, not a gcloud upgrade.
 - `resolve_proxy` failing with "more than one apiproxy/ directory" (idphoto:
   `apigee-x/` plus the retired `archive/`): ask which one, then pass
   `--bundle-dir`. Suggest a `bundleDir` line in `.apigee.json` so it stops
@@ -101,6 +106,7 @@ bundle in that case.
 | Seen | Meaning | Do |
 |---|---|---|
 | `gcloud login expired or missing` | no usable token | person runs `gcloud auth login` (`--no-launch-browser` without a browser) |
+| browser: "site can't be reached" on `accounts.youtube.com` during login | local network blocks YouTube; VPN excludes it from the tunnel | browser step on a hotspot, paste the code; see gotchas "gcloud login on networks that filter YouTube" |
 | `has uncommitted or untracked changes` | pull would destroy local edits | commit, stash, or explicit `--force` after showing the list |
 | `not inside a git repository` | no way to recover overwritten files | move the directory aside instead of `--force` |
 | `more than one apiproxy/ directory` | layout has a retired or second bundle | `--bundle-dir`, then suggest `bundleDir` in `.apigee.json` |

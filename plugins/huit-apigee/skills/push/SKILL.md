@@ -44,7 +44,10 @@ cat .apigee-state.json 2>/dev/null
 ```
 
 State in one line: proxy, bundle dir, env, org, and whether that org matches
-gcloud's project. No login: the person runs `gcloud auth login` themselves.
+gcloud's project. No login: the person runs `gcloud auth login` themselves;
+warn them that a browser failure on `accounts.youtube.com` means the local
+network blocks YouTube and the VPN will not help (gotchas reference, "gcloud
+login on networks that filter YouTube"; fix is a hotspot for the browser step).
 If `envs.<env>.note` exists in `.apigee.json` (promotion owned by another
 team, for example), print it now.
 
@@ -161,6 +164,7 @@ route you just ran).
 | Seen | Meaning | Do |
 |---|---|---|
 | `gcloud login expired or missing` | no token | person runs `gcloud auth login` |
+| browser: "site can't be reached" on `accounts.youtube.com` during login | local network blocks YouTube; VPN excludes it from the tunnel | browser step on a hotspot, paste the code; see gotchas "gcloud login on networks that filter YouTube" |
 | `bundle contains errors` (exit 5 from import.sh) | server rejected the bundle; violations printed | gotchas reference, fix, re-validate |
 | `The User element is required` | BasicAuthentication with a literal, not `ref=` | use `ref=`; see gotchas |
 | `Both operands for AND expression should be logical` | condition parser rejected `NotLike` or an unparenthesized `!=` with and/or | parenthesize or rewrite with `JavaRegex`; see gotchas |
