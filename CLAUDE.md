@@ -73,8 +73,13 @@ out the local network), a trigger phrase on the `status` skill so a reported
 Status (2026-10-13): added the `huit-servicenow-dev` plugin (0.1.0) from
 issue #12: one `.mcp.json` entry (`service-now`) pointing at the dev snow-mcp
 endpoint and a `servicenow-setup` skill. Same shape as `huit-maestro`.
-Endpoint probed live (401 + RFC 9728 metadata, DCR, scope `table_read`);
-not yet installed or authenticated from the plugin.
+Endpoint probed live (401 + RFC 9728 metadata, DCR, scope `table_read`).
+Pushed to `origin/dev` as 6817f10 the same day; installed and authenticated
+on JaZahn's machine by 2026-10-31; no PR or release yet.
+
+Status (2026-11-19): `quiz` 0.2.0 records missed questions locally and
+retakes them (issue #14); new `review` skill. See "quiz plugin" below.
+Uncommitted on `dev`.
 
 @.claude/memory/INDEX.md
 
@@ -220,9 +225,10 @@ ats-plugin-marketplace/
 │   │   └── skills/aws-login/SKILL.md    # aws-login login_all or aws login attach; see design below
 │   ├── quiz/
 │   │   ├── .claude-plugin/plugin.json
-│   │   ├── references/quiz-format.md    # shared: writing questions, asking, grading
+│   │   ├── references/quiz-format.md    # shared: writing questions, asking, grading, missed list
 │   │   ├── skills/session/SKILL.md      # /quiz:session, the default "quiz me"
-│   │   └── skills/project/SKILL.md      # /quiz:project, gotchas of the repo
+│   │   ├── skills/project/SKILL.md      # /quiz:project, gotchas of the repo
+│   │   └── skills/review/SKILL.md       # /quiz:review, retake the missed list four at a time
 │   ├── huit-apigee/
 │   │   ├── .claude-plugin/plugin.json
 │   │   ├── scripts/                     # lib, fetch, import, deploy, smoke, status, hosts, lint-bundle
@@ -499,6 +505,26 @@ name `quiz` was chosen for the invocation (`/quiz:session`, `/quiz:project`);
   `references/quiz-format.md` read fine. Consequence: a quiz skill zipped on
   its own for claude.ai upload loses its format; upload the plugin, not a
   skill.
+- **Missed questions come back (JaZahn, 2026-11-19, issue #14, 0.2.0).**
+  Every wrong answer is recorded in `.claude/quiz-missed.local.md` under the
+  project root (git root, or cwd outside git), as a standalone fact with an
+  evidence pointer that exists in the project (never "the tool result
+  above"). Per checkout, never committed: the quiz appends the path to
+  `.git/info/exclude` (`--git-common-dir`, so worktrees share it) and never
+  touches a tracked `.gitignore`. Not `CLAUDE.local.md`, which is loaded
+  into context every turn. Retake: when an `[open]` entry exists, the next
+  session or project quiz writes at most 3 fresh questions and puts the
+  oldest open miss in slot 4 (reworded), so one `AskUserQuestion` call
+  (max 4 questions) still carries the whole quiz; right once means
+  `[cleared <date>]` for good, wrong again bumps `misses`. Entries whose
+  evidence no longer holds are marked `[stale]`, not asked. A quiz with
+  nothing fresh still asks the retake alone. `review` (third skill) asks
+  only from the list, four per round; the grading of any quiz ends with a
+  one-line nudge toward it when more than 5 entries are open (threshold is
+  one number in the format file). The nudge covers "after spin-down" too,
+  since `spin-down` runs `quiz:session`. All of this lives in
+  `quiz-format.md`; the skills only reference it. The file is the one
+  thing any quiz writes.
 
 ## huit-slack (rejected, not built)
 
@@ -669,10 +695,22 @@ forced the `gh`-token workaround.
       allowlist for the plugin's server is `mcp__plugin_huit-maestro_maestro__*`,
       not `mcp__maestro__*`. `list_plans` returned the live plan, 159 days of
       history, and nine future days. This counts toward the gate above but
-      does not close it (same person, and the hand-added entry had not yet
-      been confirmed removed).
+      does not close it (same person). The hand-added user-scope `maestro`
+      entry was confirmed gone on 2026-10-31 (`claude mcp get maestro` finds
+      nothing; only `plugin:huit-maestro:maestro` remains, Connected).
+      Released in v1.1.0 via PR #11.
 - [ ] Later, if asked: a `maestro-lookup` skill with query patterns. Not
-      before people have used the bare tools for a while.
+      before people have used the bare tools for a while. Note that a
+      skill is also the only way to give `list_plans` a slash command
+      short of adding MCP prompts to the server; see
+      `.claude/memory/mcp-authorize-paths-for-plugin-servers.md`.
+- [ ] `/mcp` authenticate on `plugin:huit-maestro:maestro` succeeded on
+      JaZahn's Mac by 2026-10-31 (client not recorded). If anyone in the VS
+      Code extension reports no Authenticate action for a `plugin:*` server,
+      first check the session postdates the install, then consider the
+      skill-registered design (`claude mcp add` + `claude mcp login`) in
+      that same memory; `claude mcp login` cannot target a plugin-shipped
+      server.
 
 ## huit-servicenow-dev plugin
 
@@ -731,16 +769,26 @@ retired with a README pointer. Built 2026-10-13 in the `huit-maestro` shape:
 - **Disclosure:** the dev hostname is in this public repo. Lower risk than
   the Maestro endpoint: it is private DNS reachable only on the VPN, and
   bearer auth plus the person's own ServiceNow login guard every call.
-- **Not done:** no install or `/mcp` authenticate from the installed plugin
-  yet (this session was non-interactive). `claude plugin validate` passes
-  for the marketplace, the plugin, and the skill.
+- **Where it stands (2026-10-31):** committed as 9af8f4b, merged with
+  `origin/dev` (the only conflict was two status lines added at the same
+  spot in this file) as 6817f10 and pushed to `origin/dev` on 2026-10-13.
+  No PR to `main` and no release yet, so claude.ai sync does not have it.
+  Installed on JaZahn's machine from the `dev`-pinned marketplace
+  registration; `claude mcp list` reports `plugin:huit-servicenow-dev:service-now`
+  as Connected, so a `/mcp` authenticate has succeeded there. A `whoami`
+  call and the plugin tool-name prefix have not yet been observed inside a
+  session. `claude plugin validate` passes for all thirteen targets.
 
 ### To do
 
-- [ ] Install from the local marketplace, `/mcp` authenticate `service-now`,
-      `whoami` returns JaZahn's own user; record the observed tool-name
-      prefix here. Then commit on `dev`, PR to `main`, release (claude.ai
-      sync follows the latest release tag, see project memory).
+- [x] Install from the local marketplace and `/mcp` authenticate
+      `service-now` (done on JaZahn's machine by 2026-10-31).
+- [ ] Call `whoami` from a session and confirm it returns JaZahn's own user;
+      record the observed tool-name prefix here (expected
+      `mcp__plugin_huit-servicenow-dev_service-now__<tool>`).
+- [ ] PR `dev` to `main`, then release (claude.ai sync follows the latest
+      release tag, see project memory). `dev` is two commits ahead of
+      `main` as of 2026-10-31.
 - [ ] Watch `huit-plugin-marketplace` for the prod ServiceNow plugin. When
       it lands, remove `huit-servicenow-dev` from `marketplace.json` and
       leave a pointer in the README (per "Relationship to

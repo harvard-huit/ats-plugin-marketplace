@@ -52,11 +52,15 @@ Then rank candidates by how much it would cost the user to be wrong about them:
    around, behavior that would surprise a cold reader in a month.
 4. **Loose ends**: what is not finished, what still needs verification.
 
-If nothing rises to this bar, say so in one line and stop.
+If nothing rises to this bar, say so in one line; the format file says what
+to do when there is still a missed question to retake.
 
-## Steps 2 to 4: Write, ask, grade
+## Steps 2 to 5: Write, ask, grade, record
 
-Follow `${CLAUDE_PLUGIN_ROOT}/references/quiz-format.md` for question style,
-how to ask, and how to grade. Read it before writing the questions. When
-grading a wrong answer, point to the evidence in this session: the tool
-result, the file and function, or the turn where the decision was made.
+Follow `${CLAUDE_PLUGIN_ROOT}/references/quiz-format.md` for the missed-list
+check, question style, how to ask, how to grade, and how to record misses.
+Read it before writing the questions. When grading a wrong answer, point to
+the evidence in this session: the tool result, the file and function, or the
+turn where the decision was made. When recording that miss, anchor it to
+something in the project instead (the file the session changed, the commit,
+the doc section), since the next quiz will not have this conversation.

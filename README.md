@@ -14,7 +14,7 @@ plugin has moved, install it from here.
 |---|---|---|
 | `huit-github` | GitHub access for both of our GitHubs **without a Personal Access Token** | `/huit-github:github-setup` |
 | `huit-aws` | Log into HUIT AWS accounts with HarvardKey, from inside Claude Code | `/huit-aws:aws-login [account]` |
-| `quiz` | Multiple-choice comprehension checks on the current session or on the repo's gotchas | `/quiz:session`, `/quiz:project` |
+| `quiz` | Multiple-choice comprehension checks on the current session or on the repo's gotchas; wrong answers come back until you get them right | `/quiz:session`, `/quiz:project`, `/quiz:review` |
 | `huit-apigee` | Pull, push, and inspect Apigee X proxy bundles on the HUIT gateway without clobbering edits or the wrong org | `/huit-apigee:pull`, `/huit-apigee:push`, `/huit-apigee:status` |
 | `huit-maestro` | Ask Claude about the Maestro scheduler (job status, why a job is waiting or failed, run history, PagerDuty linkage) with a HarvardKey login and no token | `/huit-maestro:maestro-setup`, then `/mcp` |
 | `huit-servicenow-dev` | Ask Claude about ServiceNow records (incidents, changes, requests, CMDB, people, knowledge) as yourself, read-only, **dev tier** against `harvardtest`; VPN required, no token | `/huit-servicenow-dev:servicenow-setup`, then `/mcp` |
@@ -176,6 +176,7 @@ you did not know while it is still cheap to look.
 |---|---|---|
 | `/quiz:session` | what happened in this session: changes you approved without reading, decisions Claude made for you, security-relevant edits, loose ends | "quiz me", "did I miss anything" |
 | `/quiz:project` | the gotchas of the repo you are in: rules in `CLAUDE.md`, decisions reversed in git history, setup traps, "do not" comments | "quiz me on this repo", "what should I know before I touch this" |
+| `/quiz:review` | only the questions you got wrong before in this project, four at a time, until each is answered right once | "review quiz", "quiz me on what I missed" |
 
 A bare "quiz me" means the session quiz, unless the session was too small to
 have anything in it or was spent learning the project rather than changing it;
@@ -183,8 +184,16 @@ then you get the project quiz. Claude also offers the session quiz on its own
 after a significant change lands. An argument narrows either quiz, e.g.
 `/quiz:session security` or `/quiz:project setup`.
 
-Neither skill changes anything. The project quiz reads files and git history;
-in a large repo it uses a read-only subagent for the scan.
+**Missed questions come back.** Every wrong answer is written to
+`.claude/quiz-missed.local.md` under the project root, as a standalone fact
+with a pointer to the evidence. The file is per checkout, never committed
+(the plugin adds it to `.git/info/exclude`), and yours to edit or delete.
+The next session or project quiz asks three fresh questions and retakes the
+oldest open miss as the fourth; a right answer clears it for good. When more
+than five are open, the quiz says so once and points at `/quiz:review`.
+
+That file is the only thing any quiz writes. The project quiz reads files and
+git history; in a large repo it uses a read-only subagent for the scan.
 
 ## huit-apigee
 
@@ -336,9 +345,10 @@ plugins/huit-aws/
   skills/aws-login/SKILL.md              the login walkthrough
 plugins/quiz/
   .claude-plugin/plugin.json             manifest
-  references/quiz-format.md              question style, asking, grading (shared by both skills)
+  references/quiz-format.md              question style, asking, grading, the missed list (shared by all three skills)
   skills/session/SKILL.md                what happened in this session
   skills/project/SKILL.md                gotchas of the repo you are in
+  skills/review/SKILL.md                 retake what you missed, four at a time
 plugins/huit-apigee/
   .claude-plugin/plugin.json             manifest
   scripts/lib.sh                         token file, .apigee.json reader, proxy/org/bundle resolution

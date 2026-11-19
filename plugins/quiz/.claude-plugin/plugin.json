@@ -1,8 +1,8 @@
 {
   "name": "quiz",
   "displayName": "Quiz",
-  "version": "0.1.1",
-  "description": "Short multiple-choice comprehension checks so important things do not slip past: /quiz:session covers what happened in the current Claude Code session (security-relevant changes, decisions made on your behalf, loose ends); /quiz:project covers the gotchas of the repo you are in (rules in CLAUDE.md, reversed decisions in git history, setup traps).",
+  "version": "0.2.0",
+  "description": "Short multiple-choice comprehension checks so important things do not slip past: /quiz:session covers what happened in the current Claude Code session (security-relevant changes, decisions made on your behalf, loose ends); /quiz:project covers the gotchas of the repo you are in (rules in CLAUDE.md, reversed decisions in git history, setup traps). Wrong answers are recorded in a local, uncommitted file per project and retaken one per quiz; /quiz:review works through that list four at a time.",
   "author": {
     "name": "AAIS, Harvard University IT"
   },
