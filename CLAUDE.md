@@ -6,15 +6,17 @@ that supports all of ATS). Repo: `harvard-huit/ats-plugin-marketplace`
 (github.com, **public** by decision on 2026-09-25, see the visibility item
 under open questions). Marketplace name: `ats-plugin-marketplace`. It sits
 one level below the HUIT-wide `harvard-huit/huit-plugin-marketplace`; see
-"Relationship to huit-plugin-marketplace" below. It holds five plugins: `huit-github`, which gives
+"Relationship to huit-plugin-marketplace" below. It holds six plugins: `huit-github`, which gives
 people a working GitHub integration **without creating or storing a Personal
 Access Token**, `huit-aws`, which logs people into HUIT AWS accounts via
 HarvardKey (see "huit-aws plugin" below), `quiz`, multiple-choice
 comprehension checks on the current session or a repo's gotchas (see "quiz
 plugin" below), `huit-apigee`, pull/push/status for Apigee X proxy
-bundles (see "huit-apigee plugin" below), and `huit-maestro`, the Maestro
-Utility MCP server over OAuth (see "huit-maestro plugin" below). Onboarding
-is two slash commands per plugin.
+bundles (see "huit-apigee plugin" below), `huit-maestro`, the Maestro
+Utility MCP server over OAuth (see "huit-maestro plugin" below), and
+`huit-servicenow-dev`, the dev tier of HUIT's hosted ServiceNow MCP server,
+temporary until prod lands in the org marketplace (see "huit-servicenow-dev
+plugin" below). Onboarding is two slash commands per plugin.
 
 Status (2026-09-19): restructured to `plugins/<name>/`, both plugins validate
 and install locally. The GHES path is verified end to end. Nothing is committed
@@ -68,6 +70,16 @@ that filter YouTube" gotcha (Google Workspace sign-in needs
 `accounts.youtube.com`; the Harvard VPN's dynamic tunnel exclusion sends it
 out the local network), a trigger phrase on the `status` skill so a reported
 `gcloud auth login` failure loads it, and a heads-up at every "no login" step.
+Status (2026-10-13): added the `huit-servicenow-dev` plugin (0.1.0) from
+issue #12: one `.mcp.json` entry (`service-now`) pointing at the dev snow-mcp
+endpoint and a `servicenow-setup` skill. Same shape as `huit-maestro`.
+Endpoint probed live (401 + RFC 9728 metadata, DCR, scope `table_read`).
+Pushed to `origin/dev` as 6817f10 the same day; installed and authenticated
+on JaZahn's machine by 2026-10-31; no PR or release yet.
+
+Status (2026-11-19): `quiz` 0.2.0 records missed questions locally and
+retakes them (issue #14); new `review` skill. See "quiz plugin" below.
+Uncommitted on `dev`.
 
 @.claude/memory/INDEX.md
 
@@ -198,7 +210,7 @@ references do not auto-link.
 ```
 ats-plugin-marketplace/
 ├── .claude-plugin/
-│   └── marketplace.json      # name: ats-plugin-marketplace, plugins: huit-github, huit-aws, quiz, huit-apigee, huit-maestro
+│   └── marketplace.json      # name: ats-plugin-marketplace, plugins: huit-github, huit-aws, quiz, huit-apigee, huit-maestro, huit-servicenow-dev
 ├── plugins/
 │   ├── huit-github/
 │   │   ├── .claude-plugin/plugin.json   # name, version, description, author, repository
@@ -213,19 +225,24 @@ ats-plugin-marketplace/
 │   │   └── skills/aws-login/SKILL.md    # aws-login login_all or aws login attach; see design below
 │   ├── quiz/
 │   │   ├── .claude-plugin/plugin.json
-│   │   ├── references/quiz-format.md    # shared: writing questions, asking, grading
+│   │   ├── references/quiz-format.md    # shared: writing questions, asking, grading, missed list
 │   │   ├── skills/session/SKILL.md      # /quiz:session, the default "quiz me"
-│   │   └── skills/project/SKILL.md      # /quiz:project, gotchas of the repo
+│   │   ├── skills/project/SKILL.md      # /quiz:project, gotchas of the repo
+│   │   └── skills/review/SKILL.md       # /quiz:review, retake the missed list four at a time
 │   ├── huit-apigee/
 │   │   ├── .claude-plugin/plugin.json
 │   │   ├── scripts/                     # lib, fetch, import, deploy, smoke, status, hosts, lint-bundle
 │   │   ├── references/config.md         # .apigee.json / .apigee-state.json, verified HUIT org+host table
 │   │   ├── references/apigee-gotchas.md # consolidated Apigee knowledge from five proxy repos
 │   │   └── skills/{pull,push,status}/SKILL.md
-│   └── huit-maestro/
+│   ├── huit-maestro/
+│   │   ├── .claude-plugin/plugin.json
+│   │   ├── .mcp.json                    # maestro: http, prod Maestro Utility /maestro-util/mcp, OAuth via /mcp
+│   │   └── skills/maestro-setup/SKILL.md # /mcp walkthrough, duplicate-server check, troubleshooting
+│   └── huit-servicenow-dev/
 │       ├── .claude-plugin/plugin.json
-│       ├── .mcp.json                    # maestro: http, prod Maestro Utility /maestro-util/mcp, OAuth via /mcp
-│       └── skills/maestro-setup/SKILL.md # /mcp walkthrough, duplicate-server check, troubleshooting
+│       ├── .mcp.json                    # service-now: http, dev snow-mcp /mcp (VPN-only), OAuth via /mcp
+│       └── skills/servicenow-setup/SKILL.md # VPN check, duplicate check (service-now, snow), /mcp, troubleshooting
 ├── README.md                 # user-facing: install, updates, one section per plugin
 ├── CLAUDE.md                 # this file
 └── .claude/memory/INDEX.md   # committed project memory (portable across machines)
@@ -488,6 +505,26 @@ name `quiz` was chosen for the invocation (`/quiz:session`, `/quiz:project`);
   `references/quiz-format.md` read fine. Consequence: a quiz skill zipped on
   its own for claude.ai upload loses its format; upload the plugin, not a
   skill.
+- **Missed questions come back (JaZahn, 2026-11-19, issue #14, 0.2.0).**
+  Every wrong answer is recorded in `.claude/quiz-missed.local.md` under the
+  project root (git root, or cwd outside git), as a standalone fact with an
+  evidence pointer that exists in the project (never "the tool result
+  above"). Per checkout, never committed: the quiz appends the path to
+  `.git/info/exclude` (`--git-common-dir`, so worktrees share it) and never
+  touches a tracked `.gitignore`. Not `CLAUDE.local.md`, which is loaded
+  into context every turn. Retake: when an `[open]` entry exists, the next
+  session or project quiz writes at most 3 fresh questions and puts the
+  oldest open miss in slot 4 (reworded), so one `AskUserQuestion` call
+  (max 4 questions) still carries the whole quiz; right once means
+  `[cleared <date>]` for good, wrong again bumps `misses`. Entries whose
+  evidence no longer holds are marked `[stale]`, not asked. A quiz with
+  nothing fresh still asks the retake alone. `review` (third skill) asks
+  only from the list, four per round; the grading of any quiz ends with a
+  one-line nudge toward it when more than 5 entries are open (threshold is
+  one number in the format file). The nudge covers "after spin-down" too,
+  since `spin-down` runs `quiz:session`. All of this lives in
+  `quiz-format.md`; the skills only reference it. The file is the one
+  thing any quiz writes.
 
 ## huit-slack (rejected, not built)
 
@@ -652,18 +689,123 @@ forced the `gh`-token workaround.
       marketplace.
 - [ ] Fix the dev-vanity-host URL in `aais-maestro-util/docs/mcp-client-setup.md`
       and point it at this plugin as the preferred Claude Code path.
-- [ ] Record the observed plugin tool-name form here once seen in a session.
+- [x] Record the observed plugin tool-name form here once seen in a session.
+      Seen 2026-10-06 on JaZahn's machine: `mcp__plugin_huit-maestro_maestro__<tool>`
+      (e.g. `mcp__plugin_huit-maestro_maestro__list_plans`), so a settings
+      allowlist for the plugin's server is `mcp__plugin_huit-maestro_maestro__*`,
+      not `mcp__maestro__*`. `list_plans` returned the live plan, 159 days of
+      history, and nine future days. This counts toward the gate above but
+      does not close it (same person). The hand-added user-scope `maestro`
+      entry was confirmed gone on 2026-10-31 (`claude mcp get maestro` finds
+      nothing; only `plugin:huit-maestro:maestro` remains, Connected).
+      Released in v1.1.0 via PR #11.
 - [ ] Later, if asked: a `maestro-lookup` skill with query patterns. Not
-      before people have used the bare tools for a while.
+      before people have used the bare tools for a while. Note that a
+      skill is also the only way to give `list_plans` a slash command
+      short of adding MCP prompts to the server; see
+      `.claude/memory/mcp-authorize-paths-for-plugin-servers.md`.
+- [ ] `/mcp` authenticate on `plugin:huit-maestro:maestro` succeeded on
+      JaZahn's Mac by 2026-10-31 (client not recorded). If anyone in the VS
+      Code extension reports no Authenticate action for a `plugin:*` server,
+      first check the session postdates the install, then consider the
+      skill-registered design (`claude mcp add` + `claude mcp login`) in
+      that same memory; `claude mcp login` cannot target a plugin-shipped
+      server.
+
+## huit-servicenow-dev plugin
+
+From issue #12 (JaZahn, 2026-10-13): "add the service-now mcp", dev tier
+only, explicitly temporary. The production server is meant to be published
+in `harvard-huit/huit-plugin-marketplace`, at which point this plugin is
+retired with a README pointer. Built 2026-10-13 in the `huit-maestro` shape:
+`.mcp.json` with one `http` server plus a setup skill, no scripts, no hooks.
+
+- **Server:** snow-mcp, repo `harvard-huit/hcdo-ia-snow-mcp` (github.com,
+  internal, owned outside AAIS). A shared remote MCP server for ServiceNow
+  that presents a spec-compliant OAuth surface (discovery, DCR, PKCE) and
+  proxies the authorization-code flow to the ServiceNow instance's own
+  `/oauth_auth.do` and `/oauth_token.do`, so each person logs in as
+  themselves through HarvardKey SSO and every call carries their ACLs.
+  Per-user ServiceNow tokens are stored encrypted server-side (DynamoDB).
+  Infra is in the sibling repo `hcdo-ia-mcp-hosting-tf-aws`.
+- **URLs:** dev `https://snow.mcp.dev.cloud.huit.harvard.edu/mcp` (live,
+  read-only, against `harvardtest.service-now.com`); prod
+  `https://snow.mcp.cloud.huit.harvard.edu/mcp` (not serving as of the
+  server README; blocked on a ServiceNow client secret and an instance
+  decision). Both hostnames resolve to private `10.38.x` addresses and need
+  the HUIT cloudadmin VPN, including for the browser redirect. Verified
+  2026-10-13 from a VPN-connected machine: `/health` returns
+  `{"status":"ok"}`, unauthenticated `initialize` returns 401 with
+  `WWW-Authenticate: Bearer resource_metadata=".../.well-known/oauth-protected-resource/mcp"`,
+  that RFC 9728 document names the authorization server (the same host) and
+  the single scope `table_read`, and `/.well-known/oauth-authorization-server`
+  advertises `registration_endpoint`, S256 PKCE, and `none` as a token auth
+  method. So Claude Code's standard `/mcp` authenticate works, as with
+  Maestro. The path-less `/.well-known/oauth-protected-resource` is 404;
+  only the `/mcp`-suffixed form exists.
+- **Names:** the MCP server key is `service-now`, matching the `claude mcp
+  add` command in issue #12. The server's own docs use `snow`, so the skill's
+  duplicate check looks for both. The plugin name is `huit-servicenow-dev`,
+  not `huit-servicenow`, on purpose: Claude Code loads one plugin per
+  manifest name and an installed-from-marketplace copy beats a claude.ai
+  synced one regardless of version (see
+  `.claude/memory/local-install-shadows-synced-plugin.md`), so a dev plugin
+  named like the future prod one would silently shadow it. Plugin tool names
+  will therefore be `mcp__plugin_huit-servicenow-dev_service-now__<tool>`;
+  not yet observed.
+- **The skill does not list the tools.** Same reasoning as Maestro: each
+  tool carries its own description. It names only `whoami`,
+  `connection_info`, `query_records`, `describe_table` as the verification
+  and orientation set (from the server's `docs/connect.md`). Tool counts in
+  the server docs disagree (README says 45 read-only tools served; connect.md
+  says 23), so the skill states no number.
+- **What the skill does cover:** the VPN precondition first (`curl .../health`,
+  a hang means VPN not server), the dev-tier caveat (test data from
+  `harvardtest`), the duplicate check, `/mcp`, the troubleshooting table from
+  the server's `docs/connect.md` (redirect_uri mismatch is a server-owner
+  fix; 403 everywhere is ACLs or the `snc_platform_rest_api_access` role;
+  a signing-key rotation logs everyone out), token lifetimes (~30 min
+  access, ~100 day refresh), and the read-only rule.
+- **Disclosure:** the dev hostname is in this public repo. Lower risk than
+  the Maestro endpoint: it is private DNS reachable only on the VPN, and
+  bearer auth plus the person's own ServiceNow login guard every call.
+- **Where it stands (2026-10-31):** committed as 9af8f4b, merged with
+  `origin/dev` (the only conflict was two status lines added at the same
+  spot in this file) as 6817f10 and pushed to `origin/dev` on 2026-10-13.
+  No PR to `main` and no release yet, so claude.ai sync does not have it.
+  Installed on JaZahn's machine from the `dev`-pinned marketplace
+  registration; `claude mcp list` reports `plugin:huit-servicenow-dev:service-now`
+  as Connected, so a `/mcp` authenticate has succeeded there. A `whoami`
+  call and the plugin tool-name prefix have not yet been observed inside a
+  session. `claude plugin validate` passes for all thirteen targets.
+
+### To do
+
+- [x] Install from the local marketplace and `/mcp` authenticate
+      `service-now` (done on JaZahn's machine by 2026-10-31).
+- [ ] Call `whoami` from a session and confirm it returns JaZahn's own user;
+      record the observed tool-name prefix here (expected
+      `mcp__plugin_huit-servicenow-dev_service-now__<tool>`).
+- [ ] PR `dev` to `main`, then release (claude.ai sync follows the latest
+      release tag, see project memory). `dev` is two commits ahead of
+      `main` as of 2026-10-31.
+- [ ] Watch `huit-plugin-marketplace` for the prod ServiceNow plugin. When
+      it lands, remove `huit-servicenow-dev` from `marketplace.json` and
+      leave a pointer in the README (per "Relationship to
+      huit-plugin-marketplace"); close #12.
+- [ ] Tell the snow-mcp maintainers this plugin exists, so their
+      `docs/connect.md` can point Claude Code users at it instead of
+      `claude mcp add`, and so a `service-now`/`snow` name is settled before
+      prod ships.
 
 ## Conventions
 
 - Validate before every commit. Each `claude plugin validate <dir>` call checks
   one thing: the marketplace manifest for `.`, a plugin manifest for a plugin
-  dir, and skill frontmatter for a `skills` dir. So run all eleven:
+  dir, and skill frontmatter for a `skills` dir. So run all thirteen:
   `claude plugin validate .`, then `... plugins/<name>` and
   `... plugins/<name>/skills` for each of `huit-github`, `huit-aws`, `quiz`,
-  `huit-apigee`, `huit-maestro`.
+  `huit-apigee`, `huit-maestro`, `huit-servicenow-dev`.
 - Test locally with `/plugin marketplace add ~/workshop/ats-plugin-marketplace` then
   `/plugin install <name>@ats-plugin-marketplace` (or the same via `claude plugin ...`
   on the CLI). Installs copy to `~/.claude/plugins/cache/ats-plugin-marketplace/<name>/<version>/`;

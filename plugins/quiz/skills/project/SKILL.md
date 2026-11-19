@@ -26,7 +26,8 @@ If an argument was given, scope the scan to it: a category (`security`,
 
 Look where the surprises live. In a large repo, hand the wide scans to an
 Explore subagent so the main context stays clean, and ask it for conclusions
-with file references, not file dumps. Do not modify anything.
+with file references, not file dumps. Do not modify anything in the repo; the
+only file a quiz writes is the local missed list described in the format.
 
 - **The rules people wrote down**: `CLAUDE.md`, `AGENTS.md`, `README`,
   `CONTRIBUTING`, docs directories, committed memory files. Prefer the
@@ -66,12 +67,14 @@ Rank candidates by how much it would cost a developer to be wrong about them:
 4. **Setup traps**: what fails on a clean machine and why.
 
 If the repo is small and plain enough that nothing rises to this bar, say so
-in one line and stop.
+in one line; the format file says what to do when there is still a missed
+question to retake.
 
-## Steps 2 to 4: Write, ask, grade
+## Steps 2 to 5: Write, ask, grade, record
 
-Follow `${CLAUDE_PLUGIN_ROOT}/references/quiz-format.md` for question style,
-how to ask, and how to grade. Read it before writing the questions. When
-grading a wrong answer, point to the file (and line if useful), the commit, or
-the doc section where the fact lives, so the user reads the source rather than
-taking your word for it.
+Follow `${CLAUDE_PLUGIN_ROOT}/references/quiz-format.md` for the missed-list
+check, question style, how to ask, how to grade, and how to record misses.
+Read it before writing the questions. When grading a wrong answer, point to
+the file (and line if useful), the commit, or the doc section where the fact
+lives, so the user reads the source rather than taking your word for it; the
+same pointer goes into the recorded entry.

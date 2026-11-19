@@ -59,6 +59,17 @@
         "mcp",
         "huit"
       ]
+    },
+    {
+      "name": "huit-servicenow-dev",
+      "source": "./plugins/huit-servicenow-dev",
+      "description": "Ask Claude about ServiceNow records (incidents, changes, requests, catalog, CMDB, people, knowledge, approvals, any table you can see) through HUIT's hosted snow-mcp server, dev tier against harvardtest. Read-only, runs as you with your own ACLs. ServiceNow/HarvardKey login through /mcp; no token or secret. Needs the HUIT cloudadmin VPN. Temporary until the prod server lands in huit-plugin-marketplace. Skill /huit-servicenow-dev:servicenow-setup.",
+      "category": "productivity",
+      "tags": [
+        "servicenow",
+        "mcp",
+        "huit"
+      ]
     }
   ]
 }
